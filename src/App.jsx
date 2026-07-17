@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeft, ArrowRight, Check, CoatHanger, Heart, MagnifyingGlass,
+  ArrowLeft, ArrowRight, Check, CoatHanger, DownloadSimple, Heart, MagnifyingGlass,
   Plus, ShareNetwork, ShoppingBagOpen, Sparkle, SpinnerGap, X,
 } from "@phosphor-icons/react";
 import { DIVISIONS, MERCH } from "./data.js";
-import { MODEL_IMAGE } from "./model.js";
-import MERCH_SPRITE from "./merch-sprite.js";
+
+// Served as static files (cached by the service worker) instead of being
+// embedded in the JS bundle, so the app shell stays small enough for mobile.
+const MODEL_IMAGE = "/jr-model.webp";
+const MERCH_SPRITE = "/merch-sprite.webp";
 
 const SPRITE_COLUMNS = 18;
 const SPRITE_ROWS = 19;
@@ -146,8 +149,29 @@ function OutfitStudio({ open, outfit, onClose, onRemove, onClear }) {
     }
   };
 
+  const downloadLook = () => {
+    const link = document.createElement("a");
+    link.href = generatedImage;
+    link.download = "collective-fit.png";
+    link.click();
+  };
+
+  const shareLook = async () => {
+    try {
+      const blob = await (await fetch(generatedImage)).blob();
+      const file = new File([blob], "collective-fit.png", { type: blob.type || "image/png" });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "My Collective fit" });
+      } else {
+        downloadLook();
+      }
+    } catch {
+      // Sharing was dismissed or unavailable; nothing to clean up.
+    }
+  };
+
   return (
-    <aside className={open ? "studio is-open" : "studio"} aria-hidden={!open}>
+    <aside className={open ? "studio is-open" : "studio"} aria-hidden={!open} inert={!open}>
       <div className="studio-head">
         <div><small>JR’S PRIVATE FITTING ROOM</small><h2>Outfit Studio</h2></div>
         <button className="round-close" type="button" onClick={onClose} aria-label="Close outfit studio"><X size={20} /></button>
@@ -180,12 +204,35 @@ function OutfitStudio({ open, outfit, onClose, onRemove, onClear }) {
       </div>
       <button className="generate-fit-button" type="button" disabled={!outfit.length || generating} onClick={generate}>
         {generating ? <SpinnerGap size={18} className="spin" /> : <Sparkle size={18} weight="fill" />}
-        {generating ? "Tailoring your look…" : "Generate try-on"}
+        {generating ? "Tailoring your look…" : generatedImage ? "Generate another take" : "Generate try-on"}
       </button>
+      {generatedImage && !generating && (
+        <div className="look-actions">
+          <button type="button" onClick={downloadLook}><DownloadSimple size={16} /> Save look</button>
+          <button type="button" onClick={shareLook}><ShareNetwork size={16} /> Share look</button>
+        </div>
+      )}
       {message && <p className={generatedImage ? "studio-message success" : "studio-message"}>{message}</p>}
       <p className="studio-note">Identity anchored to your supplied reference portrait. Garment details are preserved from the selected catalog photography.</p>
     </aside>
   );
+}
+
+function readStored(key, fallback) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key));
+    return Array.isArray(value) ? value : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStored(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Storage may be full or blocked (private browsing); the app still works.
+  }
 }
 
 export function App() {
@@ -193,11 +240,32 @@ export function App() {
   const [activeType, setActiveType] = useState("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
-  const [outfit, setOutfit] = useState([]);
+  const [outfit, setOutfit] = useState(() =>
+    readStored("cmc-outfit", []).map((index) => MERCH.find((item) => item.index === index)).filter(Boolean).slice(0, 3));
   const [studioOpen, setStudioOpen] = useState(false);
-  const [favorites, setFavorites] = useState(() => new Set());
+  const [favorites, setFavorites] = useState(() => new Set(readStored("cmc-favorites", [])));
   const [showFavorites, setShowFavorites] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
+
+  useEffect(() => writeStored("cmc-favorites", [...favorites]), [favorites]);
+  useEffect(() => writeStored("cmc-outfit", outfit.map((item) => item.index)), [outfit]);
+
+  useEffect(() => {
+    const onKey = (event) => {
+      if (event.key !== "Escape") return;
+      if (selected) setSelected(null);
+      else if (studioOpen) setStudioOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected, studioOpen]);
+
+  useEffect(() => {
+    // The studio only overlays the page below 1181px; on desktop it shifts it.
+    const lock = Boolean(selected) || (studioOpen && window.matchMedia("(max-width: 1180px)").matches);
+    document.body.style.overflow = lock ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [selected, studioOpen]);
 
   const division = DIVISIONS.find((entry) => entry.id === activeDivision);
   const filtered = useMemo(() => {
@@ -253,7 +321,7 @@ export function App() {
           <a href="#closet">Closet</a><a href="#divisions">Divisions</a><button type="button" onClick={() => setStudioOpen(true)}>Fitting room</button>
         </nav>
         <div className="header-actions">
-          <button type="button" aria-label="Search" onClick={() => document.querySelector(".search-field input")?.focus()}><MagnifyingGlass size={20} /></button>
+          <button type="button" className="search-jump" aria-label="Search" onClick={() => document.querySelector(".search-field input")?.focus()}><MagnifyingGlass size={20} /></button>
           <button type="button" className={showFavorites ? "is-active" : ""} aria-label="Show favorites only" aria-pressed={showFavorites} onClick={() => setShowFavorites((current) => !current)}><Heart size={20} weight={showFavorites ? "fill" : "regular"} />{favorites.size > 0 && <span>{favorites.size}</span>}</button>
           <button className="bag-button" type="button" onClick={() => setStudioOpen(true)}><ShoppingBagOpen size={20} /><span>{outfit.length}</span></button>
         </div>
@@ -272,7 +340,7 @@ export function App() {
             <dl className="hero-stats"><div><dt>342</dt><dd>Drive assets</dd></div><div><dt>373</dt><dd>Catalog pieces</dd></div><div><dt>21</dt><dd>Brand worlds</dd></div></dl>
           </div>
           <div className="hero-model">
-            <div className="model-frame"><img src={MODEL_IMAGE} alt="JR Moyler, model for the Collective Merch Closet" /></div>
+            <div className="model-frame"><img src={MODEL_IMAGE} alt="JR Moyler, model for the Collective Merch Closet" fetchPriority="high" /></div>
             <div className="hero-model-card"><span>MODEL / FOUNDER</span><strong>JR MOYLER</strong><small>6'4" · Columbus, Ohio</small></div>
             <div className="hero-annotation">Your identity.<br />Every division.<br />One closet.</div>
           </div>

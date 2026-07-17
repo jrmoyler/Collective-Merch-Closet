@@ -1,5 +1,5 @@
-const CACHE = "collective-merch-shell-v1";
-const SHELL = ["/", "/manifest.webmanifest"];
+const CACHE = "collective-merch-shell-v2";
+const SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/jr-model.webp", "/merch-sprite.webp"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
@@ -25,7 +25,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (url.pathname.startsWith("/assets/")) {
+  if (url.pathname.startsWith("/assets/") || SHELL.includes(url.pathname)) {
     event.respondWith(caches.open(CACHE).then(async (cache) => {
       const cached = await cache.match(request);
       if (cached) return cached;
