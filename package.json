@@ -1,8 +1,8 @@
 {
-  "name": "wardrobe",
+  "name": "collective-merch-closet",
   "version": "1.0.0",
   "private": true,
-  "description": "A local-first AI wardrobe gallery powered by OpenAI.",
+  "description": "The Collective AI merch closet — browse every division's pieces and generate AI try-on looks.",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -14,12 +14,9 @@
   "dependencies": {
     "@fontsource-variable/instrument-sans": "^5.2.8",
     "@phosphor-icons/react": "^2.1.10",
-    "@unpic/react": "^1.0.2",
     "@vitejs/plugin-react": "5.0.4",
-    "ipx": "^3.1.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "sharp": "^0.34.5",
     "vite": "6.4.3"
   }
 }

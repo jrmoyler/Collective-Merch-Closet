@@ -7,4 +7,4 @@ npm install
 npm run check
 ```
 
-Never commit `.env`, `data/`, personal photos, generated wardrobe assets, or API keys.
+Never commit `.env`, API keys, or personal reference photos.

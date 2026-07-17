@@ -54,13 +54,16 @@ function price(value) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value || 0);
 }
 
-function ProductCard({ item, onOpen, onAdd, selected }) {
+function ProductCard({ item, onOpen, onAdd, selected, favorite, onFavorite }) {
   return (
     <article className="product-card">
       <button className="product-image-button" type="button" onClick={() => onOpen(item)} aria-label={`Open ${item.product.name}`}>
         <MerchImage item={item} />
         <span className="division-chip" style={{ "--accent": item.division.accent }}>{item.division.name}</span>
         <span className="card-index">{String(item.index).padStart(3, "0")}</span>
+      </button>
+      <button className={favorite ? "fav-button is-fav" : "fav-button"} type="button" onClick={() => onFavorite(item.index)} aria-pressed={favorite} aria-label={favorite ? `Remove ${item.product.name} from favorites` : `Save ${item.product.name} to favorites`}>
+        <Heart size={15} weight={favorite ? "fill" : "regular"} />
       </button>
       <div className="product-card-copy">
         <button type="button" className="product-title-button" onClick={() => onOpen(item)}>
@@ -193,16 +196,19 @@ export function App() {
   const [outfit, setOutfit] = useState([]);
   const [studioOpen, setStudioOpen] = useState(false);
   const [favorites, setFavorites] = useState(() => new Set());
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [shareMessage, setShareMessage] = useState("");
 
   const division = DIVISIONS.find((entry) => entry.id === activeDivision);
   const filtered = useMemo(() => {
     const query = search.toLowerCase().trim();
     return MERCH.filter((item) => activeDivision === "all" || item.divisionId === activeDivision)
       .filter((item) => activeType === "all" || item.part === activeType)
+      .filter((item) => !showFavorites || favorites.has(item.index))
       .filter((item) => !query || [
         item.product.name, item.product.style, item.product.description, item.division.name, item.ocr,
       ].join(" ").toLowerCase().includes(query));
-  }, [activeDivision, activeType, search]);
+  }, [activeDivision, activeType, search, showFavorites, favorites]);
 
   const toggleOutfit = (item) => {
     setOutfit((current) => {
@@ -221,6 +227,21 @@ export function App() {
     });
   };
 
+  const shareCloset = async () => {
+    const url = window.location.origin + window.location.pathname;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Collective Merch Closet", text: "Browse the Collective AI merch closet.", url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareMessage("Link copied");
+        setTimeout(() => setShareMessage(""), 2400);
+      }
+    } catch {
+      // Sharing was dismissed or unavailable; nothing to clean up.
+    }
+  };
+
   return (
     <div className={studioOpen ? "site-shell studio-visible" : "site-shell"} style={{ "--merch-sprite": `url("${MERCH_SPRITE}")` }}>
       <header className="site-header">
@@ -233,7 +254,7 @@ export function App() {
         </nav>
         <div className="header-actions">
           <button type="button" aria-label="Search" onClick={() => document.querySelector(".search-field input")?.focus()}><MagnifyingGlass size={20} /></button>
-          <button type="button" aria-label="Favorites"><Heart size={20} />{favorites.size > 0 && <span>{favorites.size}</span>}</button>
+          <button type="button" className={showFavorites ? "is-active" : ""} aria-label="Show favorites only" aria-pressed={showFavorites} onClick={() => setShowFavorites((current) => !current)}><Heart size={20} weight={showFavorites ? "fill" : "regular"} />{favorites.size > 0 && <span>{favorites.size}</span>}</button>
           <button className="bag-button" type="button" onClick={() => setStudioOpen(true)}><ShoppingBagOpen size={20} /><span>{outfit.length}</span></button>
         </div>
       </header>
@@ -287,16 +308,16 @@ export function App() {
             {TYPES.map(([id, label]) => <button type="button" key={id} className={activeType === id ? "active" : ""} onClick={() => setActiveType(id)}>{label}</button>)}
           </div>
           {!filtered.length ? (
-            <div className="no-results"><CoatHanger size={38} weight="light" /><h3>No pieces found</h3><button type="button" onClick={() => { setSearch(""); setActiveType("all"); }}>Reset filters</button></div>
+            <div className="no-results"><CoatHanger size={38} weight="light" /><h3>{showFavorites && !favorites.size ? "No favorites yet — tap the heart on any piece" : "No pieces found"}</h3><button type="button" onClick={() => { setSearch(""); setActiveType("all"); setShowFavorites(false); }}>Reset filters</button></div>
           ) : (
             <div className="product-grid">
-              {filtered.map((item) => <ProductCard key={item.index} item={item} onOpen={setSelected} onAdd={toggleOutfit} selected={outfit.some((piece) => piece.index === item.index)} />)}
+              {filtered.map((item) => <ProductCard key={item.index} item={item} onOpen={setSelected} onAdd={toggleOutfit} selected={outfit.some((piece) => piece.index === item.index)} favorite={favorites.has(item.index)} onFavorite={toggleFavorite} />)}
             </div>
           )}
         </section>
       </main>
 
-      <footer><div className="footer-mark">✦</div><h2>ARCHITECTING A HUMANE FUTURE.</h2><p>Collective AI Inc · Columbus, Ohio</p><button type="button"><ShareNetwork size={17} /> Share the closet</button></footer>
+      <footer><div className="footer-mark">✦</div><h2>ARCHITECTING A HUMANE FUTURE.</h2><p>Collective AI Inc · Columbus, Ohio</p><button type="button" onClick={shareCloset}><ShareNetwork size={17} /> {shareMessage || "Share the closet"}</button></footer>
 
       <ProductViewer item={selected} outfit={outfit} onToggle={toggleOutfit} onClose={() => setSelected(null)} />
       <OutfitStudio open={studioOpen} outfit={outfit} onClose={() => setStudioOpen(false)} onRemove={toggleOutfit} onClear={() => setOutfit([])} />

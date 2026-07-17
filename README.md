@@ -1,13 +1,11 @@
 <div align="center">
 
-# Wardrobe
+# Collective Merch Closet
 
-Your clothes, extracted and organized with gpt-image.
+Wear the ecosystem. 342 pieces across 21 Collective AI divisions, with an AI fitting room.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-191919?style=flat-square)](LICENSE)
 [![Node 22+](https://img.shields.io/badge/node-22%2B-191919?style=flat-square)](package.json)
-
-[See the original post →](https://x.com/cdngdev/status/2076812846793650485)
 
 </div>
 
@@ -15,56 +13,57 @@ Your clothes, extracted and organized with gpt-image.
 
 ![Modeled wardrobe editor](docs/screenshots/editor.png)
 
+## What it is
+
+A single-page merch storefront for the Collective AI portfolio:
+
+- **The closet** — every catalog piece, filterable by division, garment type, and full-text search (including OCR'd text from the product photography).
+- **Divisions** — 21 brand worlds, each with its own accent color, tagline, and tags.
+- **Favorites** — heart pieces from the grid and browse just your saved picks.
+- **Outfit Studio** — pick up to three pieces, then generate an AI try-on photo of JR wearing the outfit via the OpenAI Images API.
+
+All product imagery ships as an embedded sprite atlas, so the gallery works fully offline (a service worker caches the app shell). Only the try-on generation calls out to the API.
+
 ## Quick start
 
 ```bash
-git clone https://github.com/tandpfun/wardrobe.git
-cd wardrobe
+git clone https://github.com/jrmoyler/Collective-Merch-Closet.git
+cd Collective-Merch-Closet
 npm install
-cp .env.example .env
+cp .env.example .env   # add OPENAI_API_KEY to enable the fitting room
 npm run dev
 ```
 
-⚠️ The importer stays disabled until you add `OPENAI_API_KEY` to `.env` and place a PNG reference photo of yourself at `data/model-reference.png`.
-
-Open [localhost:5173](http://localhost:5173).
-
-## Import with Codex
-
-This repo includes two Codex skills: one imports clothes and generates modeled item photos; the other styles complete outfits and generates a modeled lookbook.
-
-```text
-$import-clothes Import the clothes from ~/Pictures/outfits, create modeled photos, and add them to this wardrobe.
-$generate-outfits Create modeled outfit ideas from my wardrobe.
-```
-
-Open the cloned repo in Codex and run either prompt. The import skill asks for a local model-reference PNG when needed, reviews every cutout and modeled photo, then writes to `data/library.json` and `data/imported/`. The outfit skill asks how many looks to create, then curates, generates, verifies, and saves the complete collection under `data/`.
-
-### For agents
-
-If you are setting up Wardrobe for a user, ask how they want to import their clothes:
-
-- **Codex:** Ask for a folder or camera-roll location and a model-reference PNG, then extract, model, and import the individual pieces by following [the bundled import skill](.agents/skills/import-clothes/SKILL.md). Afterward, offer to create a requested number of modeled looks with [the outfit-generation skill](.agents/skills/generate-outfits/SKILL.md).
-- **Web UI:** Help the user configure their own `OPENAI_API_KEY` and `data/model-reference.png`, then let them import through the app.
-
-## What it does
-
-- Detects every garment in a photo with the OpenAI Responses API
-- Extracts clean product cutouts with the OpenAI Images API
-- Generates an optional modeled editorial preview
-- Keeps originals, jobs, generated images, and the JSON database local in `data/`
-- Supports drag, drop, paste, editing, review, regeneration, and approval
+Open [localhost:5173](http://localhost:5173). The closet works without a key; the **Generate try-on** button needs `OPENAI_API_KEY` in `.env` (dev) or in your Vercel project settings (production).
 
 ## Configuration
 
-| Variable | Default |
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | — | Required for `/api/try-on` |
+| `OPENAI_IMAGE_MODEL` | `gpt-image-2` | Image edit model |
+| `OPENAI_IMAGE_QUALITY` | `high` | Image quality |
+| `OPENAI_API_BASE_URL` | `https://api.openai.com/v1` | API base override |
+
+## Project layout
+
+| Path | Purpose |
 | --- | --- |
-| `OPENAI_API_KEY` | Required |
-| `OPENAI_VISION_MODEL` | `gpt-5.4-mini` |
-| `OPENAI_IMAGE_MODEL` | `gpt-image-2` |
-| `OPENAI_IMAGE_QUALITY` | `high` |
-| `WARDROBE_MODEL_REFERENCE` | `data/model-reference.png` |
-| `WARDROBE_DATA_DIR` | `data` |
+| `src/App.jsx` | The whole storefront UI |
+| `src/data.js` | Joins catalog, assets, and OCR data into the `MERCH` list |
+| `src/merch-sprite.js` | Generated 18×19 sprite atlas of all product photos |
+| `src/model.js` | Embedded model reference photo used by the fitting room |
+| `api/try-on.js` | Vercel serverless function that generates try-on images |
+| `data/` | Source catalog, asset index, and OCR text |
+| `scripts/` | Generators for the sprite atlas and catalog JSON |
+
+## Deploying
+
+The repo is set up for Vercel (`vercel.json`): static Vite build plus the `api/try-on.js` function. Set `OPENAI_API_KEY` in the project's environment variables.
+
+## Credits
+
+Forked from [tandpfun/wardrobe](https://github.com/tandpfun/wardrobe) and rebuilt as the Collective AI merch storefront.
 
 ## License
 
