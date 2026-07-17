@@ -9,9 +9,9 @@ Wear the ecosystem. 342 pieces across 21 Collective AI divisions, with an AI fit
 
 </div>
 
-![Wardrobe gallery](docs/screenshots/gallery.png)
+![The Collective Closet gallery](docs/screenshots/gallery.png)
 
-![Modeled wardrobe editor](docs/screenshots/editor.png)
+![Outfit Studio fitting room](docs/screenshots/editor.png)
 
 ## What it is
 
@@ -51,6 +51,7 @@ Open [localhost:5173](http://localhost:5173). The closet works without a key; th
 | --- | --- |
 | `src/App.jsx` | The whole storefront UI |
 | `src/data.js` | Joins catalog, assets, and OCR data into the `MERCH` list |
+| `data/merch-map.json` | Hand-verified mapping of each product photo to its catalog entry |
 | `public/merch-sprite.webp` | Generated 18×19 sprite atlas of all product photos |
 | `src/model.js` | Model reference photo embedded for the serverless fitting room |
 | `api/try-on.js` | Vercel serverless function that generates try-on images |

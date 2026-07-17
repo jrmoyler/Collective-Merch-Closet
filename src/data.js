@@ -1,5 +1,6 @@
 import assets from "../data/merch-assets.json";
 import catalog from "../data/catalog.json";
+import merchMap from "../data/merch-map.json";
 import ocrText from "../data/merch-ocr.tsv?raw";
 
 export const DIVISIONS = [
@@ -32,62 +33,24 @@ const ocr = Object.fromEntries(ocrText.trim().split("\n").map((line) => {
   return [Number(id), rest.join(" ").trim()];
 }));
 
-const ranges = [
-  [1, 15, "aether-link"], [16, 30, "obsidian-arc"], [31, 50, "collective-ai"],
-  [51, 63, "civic-core"], [64, 64, "collective-ai"], [65, 82, "kinetic-edge"],
-  [83, 87, "cognara-mind"], [88, 88, "hybrid-living"], [89, 99, "signal-velocity"],
-  [100, 106, "nomad-nexus"], [107, 117, "eon-core"], [135, 144, "eon-core"],
-  [145, 156, "juris-guard"], [157, 157, "cognara-mind"], [158, 161, "hybrid-living"],
-  [162, 163, "collective-ai"], [164, 166, "kinetic-edge"], [167, 180, "nexus-labs"],
-  [181, 195, "the-collective"], [196, 210, "quantum-ledger"], [211, 224, "zenflow"],
-  [225, 239, "terra-axis"], [240, 253, "vital-helix"], [271, 283, "gaia-synthesis"],
-  [284, 298, "vector-shift"], [299, 313, "animus-prime"], [314, 326, "hybrid-living"],
-  [327, 341, "binary-loom"], [342, 342, "quantum-ledger"],
-];
-
-const special = {
-  118: "obsidian-arc", 119: "vector-shift", 120: "aether-link", 121: "juris-guard",
-  122: "gaia-synthesis", 123: "animus-prime", 124: "nomad-nexus", 125: "civic-core",
-  126: "the-collective", 127: "zenflow", 128: "hybrid-living", 129: "nexus-labs",
-  130: "terra-axis", 131: "vital-helix", 132: "binary-loom", 133: "collective-ai",
-  134: "kinetic-edge", 254: "obsidian-arc", 255: "quantum-ledger", 256: "zenflow",
-  257: "the-collective", 258: "juris-guard", 259: "the-collective", 260: "animus-prime",
-  261: "quantum-ledger", 262: "civic-core", 263: "kinetic-edge", 264: "obsidian-arc",
-  265: "hybrid-living", 266: "vital-helix", 267: "gaia-synthesis", 268: "nexus-labs",
-  269: "terra-axis", 270: "gaia-synthesis",
-};
-
-function divisionFor(index) {
-  if (special[index]) return special[index];
-  return ranges.find(([start, end]) => index >= start && index <= end)?.[2] || "collective-ai";
-}
-
-const catalogByDivision = Object.fromEntries(DIVISIONS.map((division) => {
-  const normalized = division.name.toUpperCase();
-  const pieces = catalog.filter((product) =>
-    product.division.replace(" NEW DIVISION", "") === normalized
-    && product.category !== "ACCESSORIES"
-  );
-  return [division.id, pieces.length ? pieces : catalog.filter((product) => product.division.replace(" NEW DIVISION", "") === normalized)];
-}));
-
-const seenPerDivision = {};
+// Every product photo is matched to its catalog entry by hand-verified review
+// of the sprite atlas (data/merch-map.json), because the photo set and the
+// catalog were produced separately and share no common ordering.
+const productBySku = Object.fromEntries(catalog.map((product) => [product.sku, product]));
 
 export const MERCH = assets.map((asset) => {
-  const divisionId = divisionFor(asset.index);
+  const mapped = merchMap[asset.index];
+  const divisionId = mapped.division;
   const division = byId[divisionId];
-  const pieces = catalogByDivision[divisionId] || [];
-  const sequence = seenPerDivision[divisionId] || 0;
-  seenPerDivision[divisionId] = sequence + 1;
-  const product = pieces[sequence % Math.max(1, pieces.length)] || catalog[asset.index - 1] || catalog[0];
+  const product = productBySku[mapped.sku];
   const typeText = `${product?.style || ""} ${product?.name || ""}`.toLowerCase();
   const part = /shoe|sneaker|boot|loafer|trainer|runner|sandal|footwear|clog|espadrille/.test(typeText)
     ? "shoes"
-    : /pant|trouser|jogger|short|tight/.test(typeText)
+    : /pant|trouser|jogger|short|tight|khaki/.test(typeText)
       ? "bottoms"
-      : /coat|jacket|blazer|parka|bomber|vest|overshirt|trench|cardigan/.test(typeText)
+      : /coat|jacket|blazer|parka|bomber|vest|overshirt|trench|cardigan|robe|kimono|windbreaker/.test(typeText)
         ? "layers"
-        : /cap|hat|beanie|scarf|glove|bag|tote|backpack/.test(typeText)
+        : /cap|hat|beanie|scarf|glove|bag|tote|backpack|sock|pin|mug|notebook|sticker|wristband|bandana|apron|tray/.test(typeText)
           ? "accessories"
           : "tops";
 
