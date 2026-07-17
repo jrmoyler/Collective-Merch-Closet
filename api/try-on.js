@@ -52,6 +52,8 @@ export default async function handler(request, response) {
       body: form,
     });
     const result = await apiResponse.json().catch(() => ({}));
+    if (apiResponse.status === 401) throw new Error("The OpenAI key was rejected — double-check OPENAI_API_KEY in this deployment's environment variables.");
+    if (apiResponse.status === 429) throw new Error("The image API is rate-limited or out of credits right now. Try again in a moment.");
     if (!apiResponse.ok) throw new Error(result.error?.message || `Image generation failed (${apiResponse.status}).`);
     const encoded = result.data?.[0]?.b64_json;
     const remote = result.data?.[0]?.url;

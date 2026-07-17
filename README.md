@@ -22,7 +22,7 @@ A single-page merch storefront for the Collective AI portfolio:
 - **Favorites** — heart pieces from the grid and browse just your saved picks.
 - **Outfit Studio** — pick up to three pieces, then generate an AI try-on photo of JR wearing the outfit via the OpenAI Images API.
 
-All product imagery ships as an embedded sprite atlas, so the gallery works fully offline (a service worker caches the app shell). Only the try-on generation calls out to the API.
+All product imagery ships as a single static sprite atlas that the service worker precaches alongside the app shell, so the gallery works fully offline and the JS bundle stays small enough for mobile connections. Only the try-on generation calls out to the API.
 
 ## Quick start
 
@@ -51,8 +51,8 @@ Open [localhost:5173](http://localhost:5173). The closet works without a key; th
 | --- | --- |
 | `src/App.jsx` | The whole storefront UI |
 | `src/data.js` | Joins catalog, assets, and OCR data into the `MERCH` list |
-| `src/merch-sprite.js` | Generated 18×19 sprite atlas of all product photos |
-| `src/model.js` | Embedded model reference photo used by the fitting room |
+| `public/merch-sprite.webp` | Generated 18×19 sprite atlas of all product photos |
+| `src/model.js` | Model reference photo embedded for the serverless fitting room |
 | `api/try-on.js` | Vercel serverless function that generates try-on images |
 | `data/` | Source catalog, asset index, and OCR text |
 | `scripts/` | Generators for the sprite atlas and catalog JSON |

@@ -15,7 +15,7 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; background: var(--ink); }
-body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(circle at 70% 0%, #14213b 0, transparent 32rem), var(--ink); }
+body { margin: 0; min-width: 320px; min-height: 100vh; min-height: 100dvh; background: radial-gradient(circle at 70% 0%, #14213b 0, transparent 32rem), var(--ink); }
 button, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { color: inherit; }
@@ -102,7 +102,8 @@ img { display: block; max-width: 100%; }
 .type-tabs button { min-width: max-content; padding: 9px 13px; border: 0; border-bottom: 1px solid transparent; background: transparent; color: #7f8da1; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; cursor: pointer; }
 .type-tabs button.active { color: white; border-color: var(--gold); }
 .product-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 34px 16px; }
-.product-card { min-width: 0; position: relative; }
+/* Off-screen cards skip layout and paint — 342 pieces would otherwise choke phones. */
+.product-card { min-width: 0; position: relative; content-visibility: auto; contain-intrinsic-size: auto 340px; }
 .fav-button { position: absolute; right: 8px; top: 8px; z-index: 2; width: 29px; height: 29px; display: grid; place-items: center; border: 0; border-radius: 99px; color: #d7dde6; background: rgba(5,10,24,.72); backdrop-filter: blur(8px); cursor: pointer; }
 .fav-button:hover { color: var(--gold); }
 .fav-button.is-fav { color: var(--gold); }
@@ -173,6 +174,9 @@ img { display: block; max-width: 100%; }
 .fit-item button { width: 27px; height: 27px; display: grid; place-items: center; border: 0; background: none; color: #6f7c8e; cursor: pointer; }
 .generate-fit-button { width: 100%; min-height: 52px; margin-top: 16px; display: flex; justify-content: center; align-items: center; gap: 10px; border: 1px solid var(--gold); background: var(--gold); color: var(--ink); font-size: 11px; font-weight: 760; text-transform: uppercase; letter-spacing: .12em; cursor: pointer; }
 .generate-fit-button:disabled { opacity: .35; cursor: not-allowed; }
+.look-actions { display: flex; gap: 8px; margin-top: 8px; }
+.look-actions button { flex: 1; min-height: 42px; display: flex; justify-content: center; align-items: center; gap: 8px; border: 1px solid #34415a; background: transparent; color: #cbd4e1; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; cursor: pointer; }
+.look-actions button:hover { border-color: var(--gold); color: white; }
 .studio-message { margin: 12px 0 0; padding: 10px; color: #ffb1b8; border-left: 2px solid #e84a5f; background: rgba(232,74,95,.08); font-size: 10px; line-height: 1.5; }
 .studio-message.success { color: #a8f2dc; border-color: var(--teal); background: rgba(0,217,181,.08); }
 .studio-note { margin: 13px 0 0; color: #59677b; font-size: 9px; line-height: 1.5; }
@@ -219,7 +223,7 @@ footer button { margin-top: 20px; padding: 10px 0; display: flex; gap: 8px; bord
 
 @media (max-width: 520px) {
   .site-header { padding: 0 12px; }
-  .header-actions > button:not(.bag-button) { display: none; }
+  .header-actions .search-jump { display: none; }
   .hero-copy { min-height: 600px; padding-top: 72px; }
   .hero h1 { font-size: clamp(58px, 20vw, 88px); }
   .hero-deck { margin-top: 30px; font-size: 16px; }
@@ -241,7 +245,7 @@ footer button { margin-top: 20px; padding: 10px 0; display: flex; gap: 8px; bord
   .product-image-button { aspect-ratio: .88; }
   .division-chip { max-width: calc(100% - 18px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .product-viewer-overlay { padding: 0; }
-  .product-viewer { width: 100%; max-height: 100vh; min-height: 100vh; }
+  .product-viewer { width: 100%; max-height: 100dvh; min-height: 100dvh; }
   .viewer-image-wrap { min-height: 54vh; }
   .viewer-copy { padding: 31px 20px 25px; }
   .viewer-copy h2 { font-size: 38px; }
