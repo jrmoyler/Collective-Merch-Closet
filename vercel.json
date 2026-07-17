@@ -5,13 +5,5 @@
       "maxDuration": 300,
       "memory": 2048
     }
-  },
-  "headers": [
-    {
-      "source": "/merch/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    }
-  ]
+  }
 }
