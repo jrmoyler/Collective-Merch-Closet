@@ -91,20 +91,12 @@
     "sku": "204",
     "division": "obsidian-arc"
   },
-  "24": {
-    "sku": "203",
-    "division": "obsidian-arc"
-  },
   "25": {
     "sku": "208",
     "division": "obsidian-arc"
   },
   "26": {
     "sku": "209",
-    "division": "obsidian-arc"
-  },
-  "28": {
-    "sku": "199",
     "division": "obsidian-arc"
   },
   "29": {
@@ -909,10 +901,6 @@
   },
   "234": {
     "sku": "134",
-    "division": "terra-axis"
-  },
-  "235": {
-    "sku": "142",
     "division": "terra-axis"
   },
   "236": {
