@@ -86,13 +86,14 @@ export default async function handler(request, response) {
   if (!model || !sheet) return response.status(400).json({ error: "That model sheet has not been uploaded yet." });
 
   const itemIds = Array.isArray(request.body?.itemIds)
-    ? [...new Set(request.body.itemIds.map(Number).filter((id) => Number.isInteger(id) && id >= 1 && id <= 342))].slice(0, 3)
+    ? [...new Set(request.body.itemIds.map(Number).filter((id) => Number.isInteger(id) && id >= 1 && id <= 342))].slice(0, 6)
     : [];
   if (!itemIds.length) return response.status(400).json({ error: "Choose at least one piece first." });
 
   try {
+    const sheetMime = sheet.match(/^data:(image\/[a-z+]+);base64,/)?.[1] || "image/jpeg";
     const modelFile = Buffer.from(sheet.split(",", 2)[1], "base64");
-    const itemImages = Array.isArray(request.body?.itemImages) ? request.body.itemImages.slice(0, 3) : [];
+    const itemImages = Array.isArray(request.body?.itemImages) ? request.body.itemImages.slice(0, 6) : [];
     if (itemImages.length !== itemIds.length) throw new Error("The selected merchandise images are incomplete.");
     const garmentFiles = itemImages.map((data, index) => {
       const match = typeof data === "string" && data.match(/^data:image\/webp;base64,([A-Za-z0-9+/=]+)$/);
@@ -115,7 +116,7 @@ export default async function handler(request, response) {
       "Use realistic anatomy, premium studio lighting, subtle deep-space navy architecture, full shoes visible, and an authentic high-fashion campaign finish.",
       "No invented brand text, no watermark, no extra people, no collage, no split screen.",
     ].join(" "));
-    form.append("image[]", new Blob([modelFile], { type: "image/webp" }), `${model.id}-model.webp`);
+    form.append("image[]", new Blob([modelFile], { type: sheetMime }), `${model.id}-model.${sheetMime.split("/")[1].replace("jpeg", "jpg")}`);
     garmentFiles.forEach((file, index) => form.append("image[]", new Blob([file], { type: "image/webp" }), `collective-piece-${index + 1}.webp`));
 
     const apiResponse = await fetch(`${readEnv("OPENAI_API_BASE_URL", "https://api.openai.com/v1").replace(/\/$/, "")}/images/edits`, {

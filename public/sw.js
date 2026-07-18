@@ -1,5 +1,5 @@
-const CACHE = "collective-merch-shell-v2";
-const SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/jr-model.webp", "/merch-sprite.webp"];
+const CACHE = "collective-merch-shell-v3";
+const SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/models/jr.jpg", "/models/hataalii.jpg", "/models/gustavo.jpg", "/merch-sprite.webp"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));

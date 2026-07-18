@@ -20,7 +20,8 @@ A single-page merch storefront for the Collective AI portfolio:
 - **The closet** — every clothing piece, filterable by division, garment type, and full-text search (including OCR'd text from the product photography). Clothing only: non-wearable merchandise (bags, pins, mugs, desk objects) is intentionally excluded from the app.
 - **Divisions** — 21 brand worlds, each with its own accent color, tagline, and tags.
 - **Favorites** — heart pieces from the grid and browse just your saved picks.
-- **Outfit Studio** — choose a model, pick up to three pieces, then generate an AI try-on photo of the outfit via the OpenAI Images API. When no API key is connected, the studio falls back to a hand-styled board composed on-device, so the button always produces a shareable image.
+- **Outfit Studio** — choose one of three models (JR, Hataalii, or Gustavo), pick up to six pieces, then generate an AI try-on photo of the outfit via the OpenAI Images API. When no API key is connected, the studio falls back to a hand-styled board composed on-device, so the button always produces a shareable image.
+- **AI Stylist** — "Complete my fit" keeps your picks and fills the remaining slots (top, bottom, shoes, layer, up to two accessories) with pieces matched by division, accent color, and price tier; "Surprise me" builds a fresh full look, sometimes as a single-division kit.
 
 All product imagery ships as a single static sprite atlas that the service worker precaches alongside the app shell, so the gallery works fully offline and the JS bundle stays small enough for mobile connections. Only the try-on generation calls out to the API.
 
