@@ -172,6 +172,13 @@ img { display: block; max-width: 100%; }
 .model-stage-label strong { margin-top: 5px; font-size: 13px; letter-spacing: .09em; }
 .stage-orbits { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .stage-orbits .merch-art { position: absolute; right: calc(10px + (var(--slot) * 44px)); top: calc(12px + (var(--slot) * 5px)); width: 56px; height: 67px; border: 1px solid rgba(255,255,255,.45); box-shadow: 0 8px 18px rgba(0,0,0,.3); transform: rotate(calc((var(--slot) - 1) * 6deg)); }
+.orbit-more { position: absolute; right: 14px; top: 92px; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 99px; border: 1px solid var(--gold); color: var(--gold); background: rgba(5,10,24,.82); font-size: 11px; font-weight: 750; transform: rotate(-6deg); }
+.stylist-row { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+.stylist-row > small { color: var(--gold); font-size: 8px; letter-spacing: .19em; }
+.stylist-row > div { display: flex; gap: 8px; }
+.stylist-row button { flex: 1; min-height: 42px; display: flex; justify-content: center; align-items: center; gap: 8px; border: 1px solid #34415a; background: transparent; color: #cbd4e1; font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: .1em; cursor: pointer; }
+.stylist-row button:hover { border-color: var(--gold); color: white; }
+
 .studio-selection { margin-top: 21px; }
 .studio-selection-head { display: flex; justify-content: space-between; color: #8795a9; font-size: 9px; text-transform: uppercase; letter-spacing: .12em; }
 .studio-selection-head button { border: 0; background: none; color: var(--gold); font-size: 9px; text-transform: uppercase; cursor: pointer; }

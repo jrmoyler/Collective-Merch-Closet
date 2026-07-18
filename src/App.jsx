@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeft, ArrowRight, Check, CoatHanger, DownloadSimple, Heart, MagnifyingGlass,
-  Plus, ShareNetwork, ShoppingBagOpen, Sparkle, SpinnerGap, X,
+  ArrowLeft, ArrowRight, Check, CoatHanger, DownloadSimple, Heart, MagicWand, MagnifyingGlass,
+  Plus, ShareNetwork, Shuffle, ShoppingBagOpen, Sparkle, SpinnerGap, X,
 } from "@phosphor-icons/react";
 import { DIVISIONS, MERCH } from "./data.js";
 import { MODELS, MODEL_SLOTS, DEFAULT_MODEL_ID, getModel } from "./models.js";
+import { pairOutfit, outfitTotal, MAX_OUTFIT } from "./stylist.js";
 
 // Served as static files (cached by the service worker) instead of being
 // embedded in the JS bundle, so the app shell stays small enough for mobile.
-const MODEL_IMAGE = "/jr-model.webp";
+const MODEL_IMAGE = "/models/jr.jpg";
 const MERCH_SPRITE = "/merch-sprite.webp";
 
 const SPRITE_COLUMNS = 18;
@@ -92,8 +93,11 @@ async function composeStyleBoard(outfit, model) {
   context.fillText(`${model.code} · ${model.name}`, canvas.width - 64, 92);
   context.textAlign = "left";
 
-  // Model panel, cover-cropped like the studio stage.
-  const panel = { x: 64, y: 208, width: 540, height: 1132 };
+  // Model panel, cover-cropped like the studio stage. With four or more
+  // garments the right rail switches to two columns, so the panel narrows to
+  // make room.
+  const twoColumns = garments.length > 3;
+  const panel = { x: 64, y: 208, width: twoColumns ? 430 : 540, height: 1132 };
   context.save();
   context.beginPath();
   context.rect(panel.x, panel.y, panel.width, panel.height);
@@ -118,9 +122,15 @@ async function composeStyleBoard(outfit, model) {
   context.font = "760 27px 'Instrument Sans Variable', Arial, sans-serif";
   context.fillText(model.name, panel.x + 24, panel.y + panel.height - 26);
 
-  // Garment cards on the right rail.
+  // Garment cards on the right rail: one large column for up to three pieces,
+  // a two-column grid for four to six.
+  const cardSize = twoColumns ? 200 : 306;
+  const cardStartX = twoColumns ? 530 : 650;
+  const cardPitchY = twoColumns ? 274 : 384;
   garments.forEach(({ item, image }, index) => {
-    const card = { x: 650, y: 208 + index * 384, size: 306 };
+    const column = twoColumns ? index % 2 : 0;
+    const row = twoColumns ? Math.floor(index / 2) : index;
+    const card = { x: cardStartX + column * (cardSize + 30), y: 208 + row * cardPitchY, size: cardSize };
     context.fillStyle = "#111b2d";
     context.fillRect(card.x, card.y, card.size, card.size);
     context.drawImage(image, card.x, card.y, card.size, card.size);
@@ -128,11 +138,11 @@ async function composeStyleBoard(outfit, model) {
     context.lineWidth = 2;
     context.strokeRect(card.x, card.y, card.size, card.size);
     context.fillStyle = "#d4a843";
-    context.font = "600 15px 'Instrument Sans Variable', Arial, sans-serif";
-    context.fillText(item.division.name.toUpperCase(), card.x, card.y + card.size + 30);
+    context.font = `600 ${twoColumns ? 12 : 15}px 'Instrument Sans Variable', Arial, sans-serif`;
+    context.fillText(item.division.name.toUpperCase(), card.x, card.y + card.size + (twoColumns ? 24 : 30), card.size);
     context.fillStyle = "#f5f5f5";
-    context.font = "700 21px 'Instrument Sans Variable', Arial, sans-serif";
-    context.fillText(item.product.name, card.x, card.y + card.size + 58, card.size);
+    context.font = `700 ${twoColumns ? 16 : 21}px 'Instrument Sans Variable', Arial, sans-serif`;
+    context.fillText(item.product.name, card.x, card.y + card.size + (twoColumns ? 46 : 58), card.size);
   });
 
   context.strokeStyle = "#26334d";
@@ -220,7 +230,7 @@ function ProductViewer({ item, outfit, onToggle, onClose }) {
   );
 }
 
-function OutfitStudio({ open, outfit, onClose, onRemove, onClear, modelId, onModelChange }) {
+function OutfitStudio({ open, outfit, onClose, onRemove, onClear, onAutoStyle, modelId, onModelChange }) {
   const [generatedImage, setGeneratedImage] = useState("");
   const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState("");
@@ -318,15 +328,27 @@ function OutfitStudio({ open, outfit, onClose, onRemove, onClear, modelId, onMod
         {!generatedImage && <div className="model-stage-label"><span>{model.code}</span><strong>{model.name}</strong></div>}
         <div className="stage-orbits" aria-hidden="true">
           {outfit.slice(0, 3).map((item, index) => <MerchImage key={item.index} item={item} style={{ "--slot": index }} decorative />)}
+          {outfit.length > 3 && <span className="orbit-more">+{outfit.length - 3}</span>}
+        </div>
+      </div>
+      <div className="stylist-row">
+        <small>AI STYLIST</small>
+        <div>
+          <button type="button" onClick={() => onAutoStyle("complete")} title="Keep your picks and fill the empty slots">
+            <MagicWand size={15} /> {outfit.length ? "Complete my fit" : "Style me"}
+          </button>
+          <button type="button" onClick={() => onAutoStyle("surprise")} title="Start fresh with a full auto-paired look">
+            <Shuffle size={15} /> Surprise me
+          </button>
         </div>
       </div>
       <div className="studio-selection">
         <div className="studio-selection-head">
-          <span>{outfit.length} / 3 pieces selected</span>
+          <span>{outfit.length} / {MAX_OUTFIT} pieces selected{outfit.length ? ` · ${price(outfitTotal(outfit))}` : ""}</span>
           {!!outfit.length && <button type="button" onClick={onClear}>Clear fit</button>}
         </div>
         {!outfit.length ? (
-          <div className="studio-empty"><CoatHanger size={30} weight="light" /><p>Add up to three pieces from any division to build a look.</p></div>
+          <div className="studio-empty"><CoatHanger size={30} weight="light" /><p>Add up to six pieces from any division — or let the AI stylist pair a look for you.</p></div>
         ) : (
           <div className="fit-list">
             {outfit.map((item) => (
@@ -378,7 +400,7 @@ export function App() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [outfit, setOutfit] = useState(() =>
-    readStored("cmc-outfit", []).map((index) => MERCH.find((item) => item.index === index)).filter(Boolean).slice(0, 3));
+    readStored("cmc-outfit", []).map((index) => MERCH.find((item) => item.index === index)).filter(Boolean).slice(0, MAX_OUTFIT));
   const [studioOpen, setStudioOpen] = useState(false);
   const [modelId, setModelId] = useState(() => {
     try {
@@ -434,8 +456,15 @@ export function App() {
     setOutfit((current) => {
       if (current.some((piece) => piece.index === item.index)) return current.filter((piece) => piece.index !== item.index);
       const next = [...current, item];
-      return next.length > 3 ? next.slice(1) : next;
+      return next.length > MAX_OUTFIT ? next.slice(1) : next;
     });
+    setStudioOpen(true);
+  };
+
+  const autoStyle = (mode) => {
+    setOutfit((current) => (mode === "surprise"
+      ? pairOutfit({ current: [], strategy: Math.random() < 0.5 ? "division" : "mix" })
+      : pairOutfit({ current, strategy: "mix" })));
     setStudioOpen(true);
   };
 
@@ -487,9 +516,9 @@ export function App() {
             <p className="hero-deck">A living uniform system for builders, researchers, founders, and every intelligence shaping a humane future.</p>
             <div className="hero-actions">
               <a className="primary-cta" href="#closet">Enter the closet <ArrowRight size={18} /></a>
-              <button className="text-cta" type="button" onClick={() => setStudioOpen(true)}><Sparkle size={16} /> Style JR</button>
+              <button className="text-cta" type="button" onClick={() => autoStyle("surprise")}><MagicWand size={16} /> Auto-style a fit</button>
             </div>
-            <dl className="hero-stats"><div><dt>{MERCH.length}</dt><dd>Clothing pieces</dd></div><div><dt>{DIVISIONS.length}</dt><dd>Brand worlds</dd></div><div><dt>3</dt><dd>Fit slots</dd></div></dl>
+            <dl className="hero-stats"><div><dt>{MERCH.length}</dt><dd>Clothing pieces</dd></div><div><dt>{MODELS.length}</dt><dd>Models</dd></div><div><dt>{MAX_OUTFIT}</dt><dd>Fit slots</dd></div></dl>
           </div>
           <div className="hero-model">
             <div className="model-frame"><img src={MODEL_IMAGE} alt="JR Moyler, model for the Collective Merch Closet" fetchPriority="high" /></div>
@@ -540,7 +569,7 @@ export function App() {
       <footer><div className="footer-mark">✦</div><h2>ARCHITECTING A HUMANE FUTURE.</h2><p>Collective AI Inc · Columbus, Ohio</p><button type="button" onClick={shareCloset}><ShareNetwork size={17} /> {shareMessage || "Share the closet"}</button></footer>
 
       <ProductViewer item={selected} outfit={outfit} onToggle={toggleOutfit} onClose={() => setSelected(null)} />
-      <OutfitStudio open={studioOpen} outfit={outfit} onClose={() => setStudioOpen(false)} onRemove={toggleOutfit} onClear={() => setOutfit([])} modelId={modelId} onModelChange={setModelId} />
+      <OutfitStudio open={studioOpen} outfit={outfit} onClose={() => setStudioOpen(false)} onRemove={toggleOutfit} onClear={() => setOutfit([])} onAutoStyle={autoStyle} modelId={modelId} onModelChange={setModelId} />
       {!studioOpen && <button className="floating-studio-button" type="button" onClick={() => setStudioOpen(true)}><Sparkle size={17} weight="fill" /> Fitting room <span>{outfit.length}</span></button>}
     </div>
   );

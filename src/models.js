@@ -9,9 +9,27 @@ export const MODELS = [
     code: "MODEL 001",
     name: "JR MOYLER",
     detail: "6'4\" · Columbus, Ohio",
-    image: "/jr-model.webp",
+    image: "/models/jr.jpg",
     identity:
-      "Preserve his recognizable face, deep brown skin tone, dense shoulder-length black curls, facial hair, nose ring, adult age, tall athletic proportions, and identity.",
+      "Preserve his recognizable face, deep brown skin tone, dense shoulder-length black curls, mustache and light beard, nose ring, adult age, tall athletic proportions, and identity.",
+  },
+  {
+    id: "hataalii",
+    code: "MODEL 002",
+    name: "HATAALII",
+    detail: "Shoulder-length braids · Columbus, Ohio",
+    image: "/models/hataalii.jpg",
+    identity:
+      "Preserve his recognizable face, deep brown skin tone, shoulder-length box braids, full beard and mustache, adult age, tall broad-shouldered muscular proportions, and identity.",
+  },
+  {
+    id: "gustavo",
+    code: "MODEL 003",
+    name: "GUSTAVO",
+    detail: "Cornrows · Columbus, Ohio",
+    image: "/models/gustavo.jpg",
+    identity:
+      "Preserve his recognizable face, brown skin tone, neat cornrow braids, goatee and mustache, hoop earrings, silver chain necklace and rings, adult age, lean athletic proportions, and identity.",
   },
 ];
 
@@ -19,7 +37,7 @@ export const MODELS = [
 // placeholders in the studio until their sheets are uploaded.
 export const MODEL_SLOTS = 3;
 
-export const DEFAULT_MODEL_ID = MODELS[0].id;
+export const DEFAULT_MODEL_ID = "jr";
 
 export function getModel(id) {
   return MODELS.find((model) => model.id === id) || null;
