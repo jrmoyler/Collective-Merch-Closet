@@ -24,16 +24,30 @@ function isHeaderSafe(value) {
   return !/[^\u0000-\u00ff]/.test(value);
 }
 
-// Environment variables are case-sensitive, but the key is easy to add as
+// Environment variables are case-sensitive, but keys are easy to add as
 // `openai_api_key` (or with stray quotes/whitespace) in the Vercel dashboard.
 // Accept any casing and clean the value instead of failing silently.
-function findOpenAIKey() {
+function findKey(names) {
   for (const [name, value] of Object.entries(process.env)) {
-    if (name.toLowerCase() !== "openai_api_key") continue;
+    if (!names.includes(name.toLowerCase())) continue;
     const cleaned = sanitizeKey(value);
     if (cleaned) return { key: cleaned, envName: name };
   }
   return { key: "", envName: "" };
+}
+
+// Two interchangeable image providers: Agnes AI (free tier, JSON API) and
+// OpenAI (paid, multipart API). When an Agnes key is connected it wins — it
+// costs nothing per image — but TRY_ON_PROVIDER=agnes|openai forces a choice
+// when both keys are present.
+function resolveProvider() {
+  const agnes = findKey(["agnes_api_key", "agnes_api_token", "apihub_agnes_api_key"]);
+  const openai = findKey(["openai_api_key"]);
+  const forced = readEnv("TRY_ON_PROVIDER", "").toLowerCase();
+  if (forced === "agnes") return { provider: "agnes", label: "Agnes", ...agnes };
+  if (forced === "openai") return { provider: "openai", label: "OpenAI", ...openai };
+  if (agnes.key) return { provider: "agnes", label: "Agnes", ...agnes };
+  return { provider: "openai", label: "OpenAI", ...openai };
 }
 
 function readEnv(name, fallback) {
@@ -45,18 +59,17 @@ function readEnv(name, fallback) {
 export default async function handler(request, response) {
   if (request.method === "GET") {
     // Connection check for the fitting room — never returns the key itself.
-    const { key, envName } = findOpenAIKey();
+    const { provider, label, key, envName } = resolveProvider();
     const keyUsable = Boolean(key) && isHeaderSafe(key);
     return response.status(200).json({
+      provider,
       keyDetected: keyUsable,
       keyEnvName: envName || null,
       note: !key
-        ? "No OPENAI_API_KEY found in this deployment's environment variables. Add it in Vercel → Project → Settings → Environment Variables, then redeploy."
+        ? "No AGNES_API_KEY or OPENAI_API_KEY found in this deployment's environment variables. Add either one in Vercel → Project → Settings → Environment Variables, then redeploy."
         : !keyUsable
-          ? "A key was found but it contains an invalid character (often a curly quote, smart dash, or hidden character from copy-paste). Re-copy it as plain text, update OPENAI_API_KEY, and redeploy."
-          : envName === "OPENAI_API_KEY"
-            ? "Key connected."
-            : `Key connected (found as "${envName}" — the standard name is OPENAI_API_KEY, but this deployment accepts it either way).`,
+          ? `A ${label} key was found but it contains an invalid character (often a curly quote, smart dash, or hidden character from copy-paste). Re-copy it as plain text, update ${envName}, and redeploy.`
+          : `${label} key connected (found as "${envName}").`,
       models: MODELS.map((model) => model.id),
     });
   }
@@ -66,10 +79,10 @@ export default async function handler(request, response) {
     return response.status(405).json({ error: "Use POST to enter the fitting room." });
   }
 
-  const { key } = findOpenAIKey();
+  const { provider, label, key, envName } = resolveProvider();
   if (!key) {
     return response.status(503).json({
-      error: "The AI fitting-room key has not been connected to this deployment yet. Add OPENAI_API_KEY in Vercel's environment variables and redeploy.",
+      error: "The AI fitting-room key has not been connected to this deployment yet. Add AGNES_API_KEY (free tier) or OPENAI_API_KEY in Vercel's environment variables and redeploy.",
       offline: true,
     });
   }
@@ -77,7 +90,7 @@ export default async function handler(request, response) {
     // Any character above U+00FF would crash the Authorization header with an
     // opaque ByteString error, so fail with an actionable message instead.
     return response.status(500).json({
-      error: "The connected OpenAI key contains an invalid character (often a curly quote, smart dash, or hidden character introduced when copying). Re-copy the key as plain text, update OPENAI_API_KEY, and redeploy.",
+      error: `The connected ${label} key contains an invalid character (often a curly quote, smart dash, or hidden character introduced when copying). Re-copy the key as plain text, update ${envName}, and redeploy.`,
     });
   }
 
@@ -91,8 +104,6 @@ export default async function handler(request, response) {
   if (!itemIds.length) return response.status(400).json({ error: "Choose at least one piece first." });
 
   try {
-    const sheetMime = sheet.match(/^data:(image\/[a-z+]+);base64,/)?.[1] || "image/jpeg";
-    const modelFile = Buffer.from(sheet.split(",", 2)[1], "base64");
     const itemImages = Array.isArray(request.body?.itemImages) ? request.body.itemImages.slice(0, 6) : [];
     if (itemImages.length !== itemIds.length) throw new Error("The selected merchandise images are incomplete.");
     const garmentFiles = itemImages.map((data, index) => {
@@ -103,30 +114,51 @@ export default async function handler(request, response) {
       return file;
     });
 
-    const form = new FormData();
-    form.set("model", readEnv("OPENAI_IMAGE_MODEL", "gpt-image-2"));
-    form.set("quality", readEnv("OPENAI_IMAGE_QUALITY", "high"));
-    form.set("size", "1024x1536");
-    form.set("output_format", "png");
-    form.set("prompt", [
+    const prompt = [
       "Create a luxury full-body vertical fashion editorial photograph of the exact adult person in Image 1 wearing one cohesive outfit built from every Collective AI garment shown in the remaining images.",
       model.identity,
       "Preserve each selected garment's logos, typography, palette, materials, trim, silhouette, and distinctive construction as faithfully as possible.",
       "Coordinate the pieces naturally; if multiple tops conflict, use one as the main layer and the others as tasteful outer or carried styling.",
       "Use realistic anatomy, premium studio lighting, subtle deep-space navy architecture, full shoes visible, and an authentic high-fashion campaign finish.",
       "No invented brand text, no watermark, no extra people, no collage, no split screen.",
-    ].join(" "));
-    form.append("image[]", new Blob([modelFile], { type: sheetMime }), `${model.id}-model.${sheetMime.split("/")[1].replace("jpeg", "jpg")}`);
-    garmentFiles.forEach((file, index) => form.append("image[]", new Blob([file], { type: "image/webp" }), `collective-piece-${index + 1}.webp`));
+    ].join(" ");
 
-    const apiResponse = await fetch(`${readEnv("OPENAI_API_BASE_URL", "https://api.openai.com/v1").replace(/\/$/, "")}/images/edits`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}` },
-      body: form,
-    });
+    let apiResponse;
+    if (provider === "agnes") {
+      // Agnes speaks an OpenAI-style JSON dialect: reference images travel as
+      // data URIs in extra_body.image (the sheet and garments already are data
+      // URIs), and response_format must live inside extra_body, not top level.
+      apiResponse = await fetch(`${readEnv("AGNES_API_BASE_URL", "https://apihub.agnes-ai.com/v1").replace(/\/$/, "")}/images/generations`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: readEnv("AGNES_IMAGE_MODEL", "agnes-image-2.1-flash"),
+          prompt,
+          size: readEnv("AGNES_IMAGE_SIZE", "1024x1536"),
+          extra_body: { image: [sheet, ...itemImages], response_format: "b64_json" },
+        }),
+      });
+    } else {
+      const sheetMime = sheet.match(/^data:(image\/[a-z+]+);base64,/)?.[1] || "image/jpeg";
+      const modelFile = Buffer.from(sheet.split(",", 2)[1], "base64");
+      const form = new FormData();
+      form.set("model", readEnv("OPENAI_IMAGE_MODEL", "gpt-image-2"));
+      form.set("quality", readEnv("OPENAI_IMAGE_QUALITY", "high"));
+      form.set("size", "1024x1536");
+      form.set("output_format", "png");
+      form.set("prompt", prompt);
+      form.append("image[]", new Blob([modelFile], { type: sheetMime }), `${model.id}-model.${sheetMime.split("/")[1].replace("jpeg", "jpg")}`);
+      garmentFiles.forEach((file, index) => form.append("image[]", new Blob([file], { type: "image/webp" }), `collective-piece-${index + 1}.webp`));
+      apiResponse = await fetch(`${readEnv("OPENAI_API_BASE_URL", "https://api.openai.com/v1").replace(/\/$/, "")}/images/edits`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}` },
+        body: form,
+      });
+    }
+
     const result = await apiResponse.json().catch(() => ({}));
-    if (apiResponse.status === 401) throw new Error("The OpenAI key was rejected — double-check OPENAI_API_KEY in this deployment's environment variables.");
-    if (apiResponse.status === 429) throw new Error("The image API is rate-limited or out of credits right now. Try again in a moment.");
+    if (apiResponse.status === 401) throw new Error(`The ${label} key was rejected — double-check ${envName} in this deployment's environment variables.`);
+    if (apiResponse.status === 429) throw new Error(`The ${label} image API is rate-limited or out of credits right now. Try again in a moment.`);
     if (!apiResponse.ok) throw new Error(result.error?.message || `Image generation failed (${apiResponse.status}).`);
     const encoded = result.data?.[0]?.b64_json;
     const remote = result.data?.[0]?.url;

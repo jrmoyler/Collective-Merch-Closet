@@ -31,22 +31,27 @@ All product imagery ships as a single static sprite atlas that the service worke
 git clone https://github.com/jrmoyler/Collective-Merch-Closet.git
 cd Collective-Merch-Closet
 npm install
-cp .env.example .env   # add OPENAI_API_KEY to enable the fitting room
+cp .env.example .env   # add AGNES_API_KEY or OPENAI_API_KEY to enable the fitting room
 npm run dev
 ```
 
-Open [localhost:5173](http://localhost:5173). The closet works without a key; the **Generate try-on** button needs `OPENAI_API_KEY` in `.env` (dev) or in your Vercel project settings (production).
+Open [localhost:5173](http://localhost:5173). The closet works without a key; the **Generate try-on** button needs `AGNES_API_KEY` (Agnes AI, free tier) or `OPENAI_API_KEY` in `.env` (dev) or in your Vercel project settings (production). When both are set, Agnes wins — force a choice with `TRY_ON_PROVIDER`.
 
 ## Configuration
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | — | Required for AI generation in `/api/try-on` |
-| `OPENAI_IMAGE_MODEL` | `gpt-image-2` | Image edit model |
-| `OPENAI_IMAGE_QUALITY` | `high` | Image quality |
-| `OPENAI_API_BASE_URL` | `https://api.openai.com/v1` | API base override |
+| `AGNES_API_KEY` | — | Agnes AI key for `/api/try-on` (preferred when present; `AGNES_API_TOKEN` / `APIHUB_AGNES_API_KEY` also accepted) |
+| `OPENAI_API_KEY` | — | OpenAI key for `/api/try-on` (used when no Agnes key is set) |
+| `TRY_ON_PROVIDER` | auto | Force `agnes` or `openai` when both keys exist |
+| `AGNES_IMAGE_MODEL` | `agnes-image-2.1-flash` | Agnes image model |
+| `AGNES_IMAGE_SIZE` | `1024x1536` | Agnes output size (tier values like `2K` also work) |
+| `AGNES_API_BASE_URL` | `https://apihub.agnes-ai.com/v1` | Agnes API base override |
+| `OPENAI_IMAGE_MODEL` | `gpt-image-2` | OpenAI image edit model |
+| `OPENAI_IMAGE_QUALITY` | `high` | OpenAI image quality |
+| `OPENAI_API_BASE_URL` | `https://api.openai.com/v1` | OpenAI API base override |
 
-Environment variable names are matched case-insensitively (`openai_api_key` works too), and stray quotes/whitespace around the key are stripped. To check whether a deployment sees the key, open `/api/try-on` in the browser — the GET response reports `keyDetected` and which variable name matched, without exposing the key.
+Environment variable names are matched case-insensitively (`agnes_api_key` works too), and stray quotes/whitespace around the key are stripped. To check whether a deployment sees a key, open `/api/try-on` in the browser — the GET response reports `provider`, `keyDetected`, and which variable name matched, without exposing the key.
 
 ## Fitting-room models
 
@@ -66,14 +71,14 @@ The script copies the image to `public/models/`, embeds the server-side sheet, a
 | `src/data.js` | Joins catalog, assets, and OCR data into the `MERCH` list |
 | `data/merch-map.json` | Hand-verified mapping of each product photo to its catalog entry |
 | `public/merch-sprite.webp` | Generated 18×19 sprite atlas of all product photos |
-| `src/model.js` | Model reference photo embedded for the serverless fitting room |
+| `src/model-sheets/` | Model reference sheets embedded for the serverless fitting room |
 | `api/try-on.js` | Vercel serverless function that generates try-on images |
 | `data/` | Source catalog, asset index, and OCR text |
 | `scripts/` | Generators for the sprite atlas and catalog JSON |
 
 ## Deploying
 
-The repo is set up for Vercel (`vercel.json`): static Vite build plus the `api/try-on.js` function. Set `OPENAI_API_KEY` in the project's environment variables.
+The repo is set up for Vercel (`vercel.json`): static Vite build plus the `api/try-on.js` function. Set `AGNES_API_KEY` (or `OPENAI_API_KEY`) in the project's environment variables.
 
 ## Credits
 
