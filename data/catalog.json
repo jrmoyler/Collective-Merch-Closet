@@ -4101,5 +4101,137 @@
     "category": "ACCESSORIES",
     "style": "Vinyl Sticker Set",
     "description": "5 die-cut UV vinyl: Eon Core full logo, longevity arc standalone, DNA helix, THE SCIENCE OF MORE TIME. text, biological age timeline fragment."
+  },
+  {
+    "id": 374,
+    "sku": "401",
+    "division": "AETHER LINK",
+    "divisionNumber": 11,
+    "name": "Chibi Courier Sock Trio",
+    "price": 32,
+    "category": "APPAREL",
+    "style": "Merino Crew Sock 3-Pack",
+    "description": "Three-pack in transmission rust and signal white. Maze-circuit knit, the chibi courier robot mascot, and star-grid patterns with copper toe caps. Comms-grade comfort for long build sessions."
+  },
+  {
+    "id": 375,
+    "sku": "402",
+    "division": "AETHER LINK",
+    "divisionNumber": 11,
+    "name": "AL Monogram Snapback",
+    "price": 42,
+    "category": "APPAREL",
+    "style": "Structured Snapback",
+    "description": "Transmission rust crown with the tonal AL outline monogram and AETHER LINK wordmark stitched beneath. Flat brim, matte finish. The everyday antenna."
+  },
+  {
+    "id": 376,
+    "sku": "403",
+    "division": "AETHER LINK",
+    "divisionNumber": 11,
+    "name": "Signal Weave Bucket Hat",
+    "price": 48,
+    "category": "APPAREL",
+    "style": "Cotton Twill Bucket Hat",
+    "description": "Transmission rust twill with the mesh-network web printed across the underbrim and an adjustable chin cord. Coverage that keeps you connected."
+  },
+  {
+    "id": 377,
+    "sku": "404",
+    "division": "KINETIC EDGE",
+    "divisionNumber": 6,
+    "name": "KE Strapback Cap",
+    "price": 40,
+    "category": "APPAREL",
+    "style": "Athletic Strapback Cap",
+    "description": "Matte black six-panel with the embroidered polygon arm icon and a Kinetic Edge green strapback closure with KE pull tab. Train smarter from warm-up to cool-down."
+  },
+  {
+    "id": 378,
+    "sku": "405",
+    "division": "KINETIC EDGE",
+    "divisionNumber": 6,
+    "name": "Polygon Mesh Knit Vest",
+    "price": 118,
+    "category": "APPAREL",
+    "style": "Jacquard Knit Sweater Vest",
+    "description": "Black merino V-neck vest with the full polygon performance mesh knitted through in signal green and diamond white, KE mark at the hem. Data you can layer."
+  },
+  {
+    "id": 379,
+    "sku": "406",
+    "division": "KINETIC EDGE",
+    "divisionNumber": 6,
+    "name": "Polygon Arm Hoodie",
+    "price": 130,
+    "category": "APPAREL",
+    "style": "Graphic Pullover Hoodie",
+    "description": "Forest black fleece with the polygon biomechanics arm mapped across the chest in stitched constellation lines. KINETIC EDGE across the shoulders."
+  },
+  {
+    "id": 380,
+    "sku": "407",
+    "division": "GAIA SYNTHESIS",
+    "divisionNumber": 16,
+    "name": "Canopy Bucket Hat",
+    "price": 46,
+    "category": "APPAREL",
+    "style": "Garment-Dyed Bucket Hat",
+    "description": "Regeneration green twill with a tonal leaf-circuit band and stitched GS mark. Shade grown, canopy tested."
+  },
+  {
+    "id": 381,
+    "sku": "408",
+    "division": "GAIA SYNTHESIS",
+    "divisionNumber": 16,
+    "name": "Living Emblem Snapback",
+    "price": 52,
+    "category": "APPAREL",
+    "style": "Structured Snapback",
+    "description": "Black crown carrying the gold living-systems emblem — half leaf, half circuit — with root traces etched along the brim. GAIA SYNTHESIS side embroidery."
+  },
+  {
+    "id": 382,
+    "sku": "409",
+    "division": "VECTOR SHIFT",
+    "divisionNumber": 10,
+    "name": "VS Broadcast Trucker",
+    "price": 38,
+    "category": "APPAREL",
+    "style": "Mesh-Back Trucker Cap",
+    "description": "Deep navy front panel with the chrome VS mark and VECTOR SHIFT wordmark over a diamond-white mesh back. Everything moves — keep your head cool while it does."
+  },
+  {
+    "id": 383,
+    "sku": "410",
+    "division": "ANIMUS PRIME",
+    "divisionNumber": 17,
+    "name": "Prime Optic Snapback",
+    "price": 44,
+    "category": "APPAREL",
+    "style": "Structured Snapback",
+    "description": "Matte black six-panel with the cyan optic emblem of the Prime Directorate at center. Built to work beside you, brim first."
+  },
+  {
+    "id": 384,
+    "sku": "411",
+    "division": "BINARY LOOM",
+    "divisionNumber": 9,
+    "name": "Code Block Snapback",
+    "price": 44,
+    "category": "APPAREL",
+    "style": "Structured Snapback",
+    "description": "Black structured crown with the white code-block die — brackets on every face — and BL stitched at the side. Ship it, wear it."
+  },
+  {
+    "id": 385,
+    "sku": "412",
+    "division": "HYBRID LIVING",
+    "divisionNumber": 4,
+    "name": "Campus Crest Polo",
+    "price": 68,
+    "category": "APPAREL",
+    "style": "Piqué Polo",
+    "description": "Deep space navy piqué with the HL crest at the chest, an amber-tipped collar edition, and HYBRID LIVING cuff embroidery. Office hours to demo day."
   }
 ]

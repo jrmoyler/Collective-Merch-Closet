@@ -152,6 +152,18 @@ img { display: block; max-width: 100%; }
 .studio-head { display: flex; justify-content: space-between; align-items: center; }
 .studio-head small { color: var(--gold); font-size: 8px; letter-spacing: .19em; }
 .studio-head h2 { margin: 4px 0 0; font-size: 27px; letter-spacing: -.03em; }
+.model-picker { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+.model-picker > small { color: var(--gold); font-size: 8px; letter-spacing: .19em; }
+.model-chip { display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 11px; padding: 8px 11px; border: 1px solid #1f2c44; background: #0b1424; color: #f5f5f5; text-align: left; font: inherit; cursor: pointer; }
+.model-chip img { width: 38px; height: 38px; object-fit: cover; object-position: 50% 14%; border-radius: 50%; }
+.model-chip > span:not(.slot-art) { min-width: 0; display: flex; flex-direction: column; }
+.model-chip strong { font-size: 11px; letter-spacing: .08em; }
+.model-chip small { margin-top: 3px; color: #77859a; font-size: 8px; text-transform: uppercase; letter-spacing: .08em; }
+.model-chip svg { color: var(--gold); }
+.model-chip.is-active { border-color: var(--gold); background: rgba(212,168,67,.08); }
+.model-chip.is-placeholder { border-style: dashed; opacity: .45; cursor: default; }
+.slot-art { width: 38px; height: 38px; display: grid; place-items: center; border: 1px dashed #34415a; border-radius: 50%; color: var(--gold); font-size: 13px; }
+
 .model-stage { position: relative; height: 410px; margin-top: 23px; overflow: hidden; border: 1px solid #26334d; background: #111b2d; }
 .model-stage > img { width: 100%; height: 100%; object-fit: cover; object-position: 52% 42%; }
 .model-stage::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(5,10,24,.92), transparent 42%); pointer-events: none; }

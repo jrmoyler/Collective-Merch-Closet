@@ -4,6 +4,7 @@ import {
   Plus, ShareNetwork, ShoppingBagOpen, Sparkle, SpinnerGap, X,
 } from "@phosphor-icons/react";
 import { DIVISIONS, MERCH } from "./data.js";
+import { MODELS, MODEL_SLOTS, DEFAULT_MODEL_ID, getModel } from "./models.js";
 
 // Served as static files (cached by the service worker) instead of being
 // embedded in the JS bundle, so the app shell stays small enough for mobile.
@@ -46,6 +47,108 @@ async function cropMerchImage(item) {
   const context = canvas.getContext("2d");
   context.drawImage(image, (offset % SPRITE_COLUMNS) * SPRITE_CELL, Math.floor(offset / SPRITE_COLUMNS) * SPRITE_CELL, SPRITE_CELL, SPRITE_CELL, 0, 0, SPRITE_CELL, SPRITE_CELL);
   return canvas.toDataURL("image/webp", 0.9);
+}
+
+function loadImageElement(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("An image for the style board could not be loaded."));
+    image.src = src;
+  });
+}
+
+// Offline fallback for the fitting room: when the AI key isn't connected (or
+// the network is down), compose the model and the selected garments into a
+// lookbook-style board entirely on the client, so "Generate try-on" always
+// produces a shareable image.
+async function composeStyleBoard(outfit, model) {
+  const [modelImage, ...garments] = await Promise.all([
+    loadImageElement(model.image),
+    ...outfit.map(async (item) => ({ item, image: await loadImageElement(await cropMerchImage(item)) })),
+  ]);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
+  canvas.height = 1536;
+  const context = canvas.getContext("2d");
+
+  const background = context.createLinearGradient(0, 0, 0, canvas.height);
+  background.addColorStop(0, "#0b1020");
+  background.addColorStop(1, "#101a30");
+  context.fillStyle = background;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  context.textBaseline = "alphabetic";
+  context.fillStyle = "#d4a843";
+  context.font = "600 21px 'Instrument Sans Variable', Arial, sans-serif";
+  context.fillText("C O L L E C T I V E   M E R C H   C L O S E T", 64, 92);
+  context.fillStyle = "#f5f5f5";
+  context.font = "760 62px 'Instrument Sans Variable', Arial, sans-serif";
+  context.fillText("STYLE BOARD", 62, 158);
+  context.fillStyle = "#8b9bae";
+  context.font = "600 19px 'Instrument Sans Variable', Arial, sans-serif";
+  context.textAlign = "right";
+  context.fillText(`${model.code} · ${model.name}`, canvas.width - 64, 92);
+  context.textAlign = "left";
+
+  // Model panel, cover-cropped like the studio stage.
+  const panel = { x: 64, y: 208, width: 540, height: 1132 };
+  context.save();
+  context.beginPath();
+  context.rect(panel.x, panel.y, panel.width, panel.height);
+  context.clip();
+  const scale = Math.max(panel.width / modelImage.width, panel.height / modelImage.height);
+  const drawWidth = modelImage.width * scale;
+  const drawHeight = modelImage.height * scale;
+  context.drawImage(modelImage, panel.x + (panel.width - drawWidth) / 2, panel.y + (panel.height - drawHeight) * 0.25, drawWidth, drawHeight);
+  const fade = context.createLinearGradient(0, panel.y + panel.height - 200, 0, panel.y + panel.height);
+  fade.addColorStop(0, "rgba(5,10,24,0)");
+  fade.addColorStop(1, "rgba(5,10,24,.9)");
+  context.fillStyle = fade;
+  context.fillRect(panel.x, panel.y, panel.width, panel.height);
+  context.restore();
+  context.strokeStyle = "#d4a843";
+  context.lineWidth = 2;
+  context.strokeRect(panel.x, panel.y, panel.width, panel.height);
+  context.fillStyle = "#d4a843";
+  context.font = "600 17px 'Instrument Sans Variable', Arial, sans-serif";
+  context.fillText(model.code, panel.x + 24, panel.y + panel.height - 58);
+  context.fillStyle = "#f5f5f5";
+  context.font = "760 27px 'Instrument Sans Variable', Arial, sans-serif";
+  context.fillText(model.name, panel.x + 24, panel.y + panel.height - 26);
+
+  // Garment cards on the right rail.
+  garments.forEach(({ item, image }, index) => {
+    const card = { x: 650, y: 208 + index * 384, size: 306 };
+    context.fillStyle = "#111b2d";
+    context.fillRect(card.x, card.y, card.size, card.size);
+    context.drawImage(image, card.x, card.y, card.size, card.size);
+    context.strokeStyle = "#26334d";
+    context.lineWidth = 2;
+    context.strokeRect(card.x, card.y, card.size, card.size);
+    context.fillStyle = "#d4a843";
+    context.font = "600 15px 'Instrument Sans Variable', Arial, sans-serif";
+    context.fillText(item.division.name.toUpperCase(), card.x, card.y + card.size + 30);
+    context.fillStyle = "#f5f5f5";
+    context.font = "700 21px 'Instrument Sans Variable', Arial, sans-serif";
+    context.fillText(item.product.name, card.x, card.y + card.size + 58, card.size);
+  });
+
+  context.strokeStyle = "#26334d";
+  context.beginPath();
+  context.moveTo(64, 1424);
+  context.lineTo(canvas.width - 64, 1424);
+  context.stroke();
+  context.fillStyle = "#8b9bae";
+  context.font = "600 17px 'Instrument Sans Variable', Arial, sans-serif";
+  context.fillText("HAND-STYLED BOARD — AI TRY-ON RETURNS WHEN THE KEY IS CONNECTED", 64, 1468);
+  context.fillStyle = "#d4a843";
+  context.textAlign = "right";
+  context.fillText("COLLECTIVE AI ✦", canvas.width - 64, 1468);
+  context.textAlign = "left";
+
+  return canvas.toDataURL("image/png");
 }
 
 const TYPES = [
@@ -117,31 +220,49 @@ function ProductViewer({ item, outfit, onToggle, onClose }) {
   );
 }
 
-function OutfitStudio({ open, outfit, onClose, onRemove, onClear }) {
+function OutfitStudio({ open, outfit, onClose, onRemove, onClear, modelId, onModelChange }) {
   const [generatedImage, setGeneratedImage] = useState("");
   const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState("");
+  const [isBoard, setIsBoard] = useState(false);
+  const model = getModel(modelId) || MODELS[0];
 
   useEffect(() => {
     setGeneratedImage("");
     setMessage("");
-  }, [outfit]);
+    setIsBoard(false);
+  }, [outfit, modelId]);
 
   const generate = async () => {
     if (!outfit.length || generating) return;
     setGenerating(true);
     setMessage("");
+    setIsBoard(false);
     try {
       const itemImages = await Promise.all(outfit.map(cropMerchImage));
-      const response = await fetch("/api/try-on", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemIds: outfit.map((item) => item.index), itemImages }),
-      });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error || "The fitting room is warming up.");
-      setGeneratedImage(body.image);
-      setMessage("Your Collective fit is ready.");
+      let response = null;
+      try {
+        response = await fetch("/api/try-on", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ itemIds: outfit.map((item) => item.index), itemImages, modelId: model.id }),
+        });
+      } catch {
+        response = null; // Network down or API unreachable — fall through to the style board.
+      }
+      const body = response ? await response.json().catch(() => ({})) : {};
+      if (response?.ok) {
+        setGeneratedImage(body.image);
+        setMessage("Your Collective fit is ready.");
+      } else if (!response || response.status === 503 || response.status === 404) {
+        // 503 = no API key connected; 404 = no serverless function (local
+        // preview); null = network down. All fall back to the on-device board.
+        setGeneratedImage(await composeStyleBoard(outfit, model));
+        setIsBoard(true);
+        setMessage("The AI fitting room isn't connected yet, so here's your hand-styled board — still yours to save and share. The full AI try-on switches on automatically once the key is live.");
+      } else {
+        throw new Error(body.error || "The fitting room is warming up.");
+      }
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -152,14 +273,14 @@ function OutfitStudio({ open, outfit, onClose, onRemove, onClear }) {
   const downloadLook = () => {
     const link = document.createElement("a");
     link.href = generatedImage;
-    link.download = "collective-fit.png";
+    link.download = isBoard ? "collective-style-board.png" : "collective-fit.png";
     link.click();
   };
 
   const shareLook = async () => {
     try {
       const blob = await (await fetch(generatedImage)).blob();
-      const file = new File([blob], "collective-fit.png", { type: blob.type || "image/png" });
+      const file = new File([blob], isBoard ? "collective-style-board.png" : "collective-fit.png", { type: blob.type || "image/png" });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: "My Collective fit" });
       } else {
@@ -173,12 +294,28 @@ function OutfitStudio({ open, outfit, onClose, onRemove, onClear }) {
   return (
     <aside className={open ? "studio is-open" : "studio"} aria-hidden={!open} inert={!open}>
       <div className="studio-head">
-        <div><small>JR’S PRIVATE FITTING ROOM</small><h2>Outfit Studio</h2></div>
+        <div><small>THE PRIVATE FITTING ROOM</small><h2>Outfit Studio</h2></div>
         <button className="round-close" type="button" onClick={onClose} aria-label="Close outfit studio"><X size={20} /></button>
       </div>
+      <div className="model-picker" role="radiogroup" aria-label="Choose your model">
+        <small>CHOOSE YOUR MODEL</small>
+        {MODELS.map((entry) => (
+          <button key={entry.id} type="button" role="radio" aria-checked={entry.id === model.id} className={entry.id === model.id ? "model-chip is-active" : "model-chip"} onClick={() => onModelChange(entry.id)}>
+            <img src={entry.image} alt="" />
+            <span><strong>{entry.name}</strong><small>{entry.code} · {entry.detail}</small></span>
+            {entry.id === model.id && <Check size={14} weight="bold" />}
+          </button>
+        ))}
+        {Array.from({ length: Math.max(0, MODEL_SLOTS - MODELS.length) }, (_, slot) => (
+          <div key={slot} className="model-chip is-placeholder" aria-hidden="true">
+            <span className="slot-art">✦</span>
+            <span><strong>MODEL {String(MODELS.length + slot + 1).padStart(3, "0")}</strong><small>Awaiting model sheet</small></span>
+          </div>
+        ))}
+      </div>
       <div className="model-stage">
-        <img src={generatedImage || MODEL_IMAGE} alt={generatedImage ? "JR wearing the selected Collective Merch outfit" : "JR, the fitting-room model"} />
-        {!generatedImage && <div className="model-stage-label"><span>MODEL 001</span><strong>JR MOYLER</strong></div>}
+        <img src={generatedImage || model.image} alt={generatedImage ? `${model.name} wearing the selected Collective Merch outfit` : `${model.name}, the fitting-room model`} />
+        {!generatedImage && <div className="model-stage-label"><span>{model.code}</span><strong>{model.name}</strong></div>}
         <div className="stage-orbits" aria-hidden="true">
           {outfit.slice(0, 3).map((item, index) => <MerchImage key={item.index} item={item} style={{ "--slot": index }} decorative />)}
         </div>
@@ -213,7 +350,7 @@ function OutfitStudio({ open, outfit, onClose, onRemove, onClear }) {
         </div>
       )}
       {message && <p className={generatedImage ? "studio-message success" : "studio-message"}>{message}</p>}
-      <p className="studio-note">Identity anchored to your supplied reference portrait. Garment details are preserved from the selected catalog photography.</p>
+      <p className="studio-note">Identity anchored to the chosen model sheet. Garment details are preserved from the selected catalog photography.</p>
     </aside>
   );
 }
@@ -243,12 +380,27 @@ export function App() {
   const [outfit, setOutfit] = useState(() =>
     readStored("cmc-outfit", []).map((index) => MERCH.find((item) => item.index === index)).filter(Boolean).slice(0, 3));
   const [studioOpen, setStudioOpen] = useState(false);
+  const [modelId, setModelId] = useState(() => {
+    try {
+      const stored = localStorage.getItem("cmc-model");
+      return getModel(stored) ? stored : DEFAULT_MODEL_ID;
+    } catch {
+      return DEFAULT_MODEL_ID;
+    }
+  });
   const [favorites, setFavorites] = useState(() => new Set(readStored("cmc-favorites", [])));
   const [showFavorites, setShowFavorites] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
 
   useEffect(() => writeStored("cmc-favorites", [...favorites]), [favorites]);
   useEffect(() => writeStored("cmc-outfit", outfit.map((item) => item.index)), [outfit]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("cmc-model", modelId);
+    } catch {
+      // Storage may be full or blocked (private browsing); the app still works.
+    }
+  }, [modelId]);
 
   useEffect(() => {
     const onKey = (event) => {
@@ -337,7 +489,7 @@ export function App() {
               <a className="primary-cta" href="#closet">Enter the closet <ArrowRight size={18} /></a>
               <button className="text-cta" type="button" onClick={() => setStudioOpen(true)}><Sparkle size={16} /> Style JR</button>
             </div>
-            <dl className="hero-stats"><div><dt>342</dt><dd>Drive assets</dd></div><div><dt>373</dt><dd>Catalog pieces</dd></div><div><dt>21</dt><dd>Brand worlds</dd></div></dl>
+            <dl className="hero-stats"><div><dt>{MERCH.length}</dt><dd>Clothing pieces</dd></div><div><dt>{DIVISIONS.length}</dt><dd>Brand worlds</dd></div><div><dt>3</dt><dd>Fit slots</dd></div></dl>
           </div>
           <div className="hero-model">
             <div className="model-frame"><img src={MODEL_IMAGE} alt="JR Moyler, model for the Collective Merch Closet" fetchPriority="high" /></div>
@@ -388,7 +540,7 @@ export function App() {
       <footer><div className="footer-mark">✦</div><h2>ARCHITECTING A HUMANE FUTURE.</h2><p>Collective AI Inc · Columbus, Ohio</p><button type="button" onClick={shareCloset}><ShareNetwork size={17} /> {shareMessage || "Share the closet"}</button></footer>
 
       <ProductViewer item={selected} outfit={outfit} onToggle={toggleOutfit} onClose={() => setSelected(null)} />
-      <OutfitStudio open={studioOpen} outfit={outfit} onClose={() => setStudioOpen(false)} onRemove={toggleOutfit} onClear={() => setOutfit([])} />
+      <OutfitStudio open={studioOpen} outfit={outfit} onClose={() => setStudioOpen(false)} onRemove={toggleOutfit} onClear={() => setOutfit([])} modelId={modelId} onModelChange={setModelId} />
       {!studioOpen && <button className="floating-studio-button" type="button" onClick={() => setStudioOpen(true)}><Sparkle size={17} weight="fill" /> Fitting room <span>{outfit.length}</span></button>}
     </div>
   );

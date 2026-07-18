@@ -35,10 +35,12 @@ const ocr = Object.fromEntries(ocrText.trim().split("\n").map((line) => {
 
 // Every product photo is matched to its catalog entry by hand-verified review
 // of the sprite atlas (data/merch-map.json), because the photo set and the
-// catalog were produced separately and share no common ordering.
+// catalog were produced separately and share no common ordering. Photos with
+// no map entry are non-clothing merchandise (bags, cases, desk objects) that
+// the closet intentionally leaves out — this is a clothing-only app.
 const productBySku = Object.fromEntries(catalog.map((product) => [product.sku, product]));
 
-export const MERCH = assets.map((asset) => {
+export const MERCH = assets.filter((asset) => merchMap[asset.index]).map((asset) => {
   const mapped = merchMap[asset.index];
   const divisionId = mapped.division;
   const division = byId[divisionId];
@@ -50,7 +52,7 @@ export const MERCH = assets.map((asset) => {
       ? "bottoms"
       : /coat|jacket|blazer|parka|bomber|vest|overshirt|trench|cardigan|robe|kimono|windbreaker/.test(typeText)
         ? "layers"
-        : /cap|hat|beanie|scarf|glove|bag|tote|backpack|sock|pin|mug|notebook|sticker|wristband|bandana|apron|tray/.test(typeText)
+        : /cap|hat|beanie|scarf|glove|sock|snapback|trucker|wristband|bandana/.test(typeText)
           ? "accessories"
           : "tops";
 
