@@ -1,17 +1,58 @@
-import { MODEL_IMAGE } from "../src/model.js";
+import { MODELS, DEFAULT_MODEL_ID, getModel } from "../src/models.js";
+import { MODEL_SHEETS } from "../src/model-sheets.js";
 
 export const config = { maxDuration: 300 };
 
+// Environment variables are case-sensitive, but the key is easy to add as
+// `openai_api_key` (or with stray quotes/whitespace) in the Vercel dashboard.
+// Accept any casing and clean the value instead of failing silently.
+function findOpenAIKey() {
+  for (const [name, value] of Object.entries(process.env)) {
+    if (name.toLowerCase() !== "openai_api_key") continue;
+    const cleaned = String(value || "").trim().replace(/^["']|["']$/g, "");
+    if (cleaned) return { key: cleaned, envName: name };
+  }
+  return { key: "", envName: "" };
+}
+
+function readEnv(name, fallback) {
+  const match = Object.entries(process.env).find(([key]) => key.toLowerCase() === name.toLowerCase());
+  const value = match ? String(match[1] || "").trim() : "";
+  return value || fallback;
+}
+
 export default async function handler(request, response) {
+  if (request.method === "GET") {
+    // Connection check for the fitting room — never returns the key itself.
+    const { key, envName } = findOpenAIKey();
+    return response.status(200).json({
+      keyDetected: Boolean(key),
+      keyEnvName: envName || null,
+      note: key
+        ? envName === "OPENAI_API_KEY"
+          ? "Key connected."
+          : `Key connected (found as "${envName}" — the standard name is OPENAI_API_KEY, but this deployment accepts it either way).`
+        : "No OPENAI_API_KEY found in this deployment's environment variables. Add it in Vercel → Project → Settings → Environment Variables, then redeploy.",
+      models: MODELS.map((model) => model.id),
+    });
+  }
+
   if (request.method !== "POST") {
-    response.setHeader("Allow", "POST");
+    response.setHeader("Allow", "GET, POST");
     return response.status(405).json({ error: "Use POST to enter the fitting room." });
   }
 
-  const key = process.env.OPENAI_API_KEY;
+  const { key } = findOpenAIKey();
   if (!key) {
-    return response.status(503).json({ error: "The AI fitting-room key has not been connected to this deployment yet." });
+    return response.status(503).json({
+      error: "The AI fitting-room key has not been connected to this deployment yet. Add OPENAI_API_KEY in Vercel's environment variables and redeploy.",
+      offline: true,
+    });
   }
+
+  const model = getModel(typeof request.body?.modelId === "string" ? request.body.modelId : DEFAULT_MODEL_ID);
+  const sheet = model && MODEL_SHEETS[model.id];
+  if (!model || !sheet) return response.status(400).json({ error: "That model sheet has not been uploaded yet." });
 
   const itemIds = Array.isArray(request.body?.itemIds)
     ? [...new Set(request.body.itemIds.map(Number).filter((id) => Number.isInteger(id) && id >= 1 && id <= 342))].slice(0, 3)
@@ -19,7 +60,7 @@ export default async function handler(request, response) {
   if (!itemIds.length) return response.status(400).json({ error: "Choose at least one piece first." });
 
   try {
-    const model = Buffer.from(MODEL_IMAGE.split(",", 2)[1], "base64");
+    const modelFile = Buffer.from(sheet.split(",", 2)[1], "base64");
     const itemImages = Array.isArray(request.body?.itemImages) ? request.body.itemImages.slice(0, 3) : [];
     if (itemImages.length !== itemIds.length) throw new Error("The selected merchandise images are incomplete.");
     const garmentFiles = itemImages.map((data, index) => {
@@ -31,22 +72,22 @@ export default async function handler(request, response) {
     });
 
     const form = new FormData();
-    form.set("model", process.env.OPENAI_IMAGE_MODEL || "gpt-image-2");
-    form.set("quality", process.env.OPENAI_IMAGE_QUALITY || "high");
+    form.set("model", readEnv("OPENAI_IMAGE_MODEL", "gpt-image-2"));
+    form.set("quality", readEnv("OPENAI_IMAGE_QUALITY", "high"));
     form.set("size", "1024x1536");
     form.set("output_format", "png");
     form.set("prompt", [
-      "Create a luxury full-body vertical fashion editorial photograph of the exact adult man in Image 1 wearing one cohesive outfit built from every Collective AI garment shown in the remaining images.",
-      "Preserve his recognizable face, deep brown skin tone, dense shoulder-length black curls, facial hair, nose ring, adult age, tall athletic proportions, and identity.",
+      "Create a luxury full-body vertical fashion editorial photograph of the exact adult person in Image 1 wearing one cohesive outfit built from every Collective AI garment shown in the remaining images.",
+      model.identity,
       "Preserve each selected garment's logos, typography, palette, materials, trim, silhouette, and distinctive construction as faithfully as possible.",
       "Coordinate the pieces naturally; if multiple tops conflict, use one as the main layer and the others as tasteful outer or carried styling.",
       "Use realistic anatomy, premium studio lighting, subtle deep-space navy architecture, full shoes visible, and an authentic high-fashion campaign finish.",
       "No invented brand text, no watermark, no extra people, no collage, no split screen.",
     ].join(" "));
-    form.append("image[]", new Blob([model], { type: "image/webp" }), "jr-model.webp");
+    form.append("image[]", new Blob([modelFile], { type: "image/webp" }), `${model.id}-model.webp`);
     garmentFiles.forEach((file, index) => form.append("image[]", new Blob([file], { type: "image/webp" }), `collective-piece-${index + 1}.webp`));
 
-    const apiResponse = await fetch(`${(process.env.OPENAI_API_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "")}/images/edits`, {
+    const apiResponse = await fetch(`${readEnv("OPENAI_API_BASE_URL", "https://api.openai.com/v1").replace(/\/$/, "")}/images/edits`, {
       method: "POST",
       headers: { Authorization: `Bearer ${key}` },
       body: form,

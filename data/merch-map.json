@@ -4,7 +4,7 @@
     "division": "aether-link"
   },
   "2": {
-    "sku": "194",
+    "sku": "401",
     "division": "aether-link"
   },
   "3": {
@@ -16,7 +16,7 @@
     "division": "aether-link"
   },
   "5": {
-    "sku": "197",
+    "sku": "402",
     "division": "aether-link"
   },
   "6": {
@@ -28,7 +28,7 @@
     "division": "aether-link"
   },
   "8": {
-    "sku": "195",
+    "sku": "403",
     "division": "aether-link"
   },
   "9": {
@@ -101,10 +101,6 @@
   },
   "26": {
     "sku": "209",
-    "division": "obsidian-arc"
-  },
-  "27": {
-    "sku": "212",
     "division": "obsidian-arc"
   },
   "28": {
@@ -239,10 +235,6 @@
     "sku": "220",
     "division": "civic-core"
   },
-  "61": {
-    "sku": "230",
-    "division": "civic-core"
-  },
   "62": {
     "sku": "224",
     "division": "civic-core"
@@ -267,12 +259,8 @@
     "sku": "102",
     "division": "kinetic-edge"
   },
-  "68": {
-    "sku": "111",
-    "division": "kinetic-edge"
-  },
   "69": {
-    "sku": "100",
+    "sku": "405",
     "division": "kinetic-edge"
   },
   "70": {
@@ -280,11 +268,11 @@
     "division": "kinetic-edge"
   },
   "71": {
-    "sku": "100",
+    "sku": "406",
     "division": "kinetic-edge"
   },
   "72": {
-    "sku": "112",
+    "sku": "404",
     "division": "kinetic-edge"
   },
   "73": {
@@ -628,7 +616,7 @@
     "division": "cognara-mind"
   },
   "158": {
-    "sku": "065",
+    "sku": "412",
     "division": "hybrid-living"
   },
   "159": {
@@ -711,10 +699,6 @@
     "sku": "090",
     "division": "nexus-labs"
   },
-  "179": {
-    "sku": "093",
-    "division": "nexus-labs"
-  },
   "180": {
     "sku": "089",
     "division": "nexus-labs"
@@ -761,10 +745,6 @@
   },
   "191": {
     "sku": "049",
-    "division": "the-collective"
-  },
-  "192": {
-    "sku": "051",
     "division": "the-collective"
   },
   "193": {
@@ -833,10 +813,6 @@
   },
   "209": {
     "sku": "115",
-    "division": "quantum-ledger"
-  },
-  "210": {
-    "sku": "128",
     "division": "quantum-ledger"
   },
   "211": {
@@ -943,16 +919,8 @@
     "sku": "140",
     "division": "terra-axis"
   },
-  "237": {
-    "sku": "144",
-    "division": "terra-axis"
-  },
   "238": {
     "sku": "134",
-    "division": "terra-axis"
-  },
-  "239": {
-    "sku": "141",
     "division": "terra-axis"
   },
   "240": {
@@ -1108,7 +1076,7 @@
     "division": "gaia-synthesis"
   },
   "278": {
-    "sku": "283",
+    "sku": "407",
     "division": "gaia-synthesis"
   },
   "279": {
@@ -1119,16 +1087,12 @@
     "sku": "276",
     "division": "gaia-synthesis"
   },
-  "281": {
-    "sku": "280",
-    "division": "gaia-synthesis"
-  },
   "282": {
     "sku": "271",
     "division": "gaia-synthesis"
   },
   "283": {
-    "sku": "283",
+    "sku": "408",
     "division": "gaia-synthesis"
   },
   "284": {
@@ -1156,7 +1120,7 @@
     "division": "vector-shift"
   },
   "290": {
-    "sku": "179",
+    "sku": "409",
     "division": "vector-shift"
   },
   "291": {
@@ -1173,10 +1137,6 @@
   },
   "294": {
     "sku": "171",
-    "division": "vector-shift"
-  },
-  "295": {
-    "sku": "178",
     "division": "vector-shift"
   },
   "296": {
@@ -1219,10 +1179,6 @@
     "sku": "295",
     "division": "animus-prime"
   },
-  "306": {
-    "sku": "297",
-    "division": "animus-prime"
-  },
   "307": {
     "sku": "294",
     "division": "animus-prime"
@@ -1244,7 +1200,7 @@
     "division": "animus-prime"
   },
   "312": {
-    "sku": "301",
+    "sku": "410",
     "division": "animus-prime"
   },
   "313": {
@@ -1287,12 +1243,8 @@
     "sku": "072",
     "division": "hybrid-living"
   },
-  "323": {
-    "sku": "069",
-    "division": "hybrid-living"
-  },
   "324": {
-    "sku": "065",
+    "sku": "412",
     "division": "hybrid-living"
   },
   "325": {
@@ -1332,11 +1284,7 @@
     "division": "binary-loom"
   },
   "334": {
-    "sku": "160",
-    "division": "binary-loom"
-  },
-  "335": {
-    "sku": "154",
+    "sku": "411",
     "division": "binary-loom"
   },
   "336": {
@@ -1357,10 +1305,6 @@
   },
   "340": {
     "sku": "156",
-    "division": "binary-loom"
-  },
-  "341": {
-    "sku": "154",
     "division": "binary-loom"
   },
   "342": {
