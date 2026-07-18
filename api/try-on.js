@@ -3,13 +3,34 @@ import { MODEL_SHEETS } from "../src/model-sheets.js";
 
 export const config = { maxDuration: 300 };
 
+// HTTP header values are ByteStrings (Latin1), so any character above code
+// point 255 crashes the request with an opaque
+// "Cannot convert argument to a ByteString…" error the moment we build the
+// Authorization header. Copy-pasting a key from a doc or chat commonly turns
+// its hyphens into "smart" en/em dashes and slips in zero-width characters, so
+// repair those here and report anything left over instead of crashing.
+function sanitizeKey(raw) {
+  return String(raw || "")
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .trim()
+    .replace(/[\u2010-\u2015\u2212]/g, "-") // hyphen/en/em/figure/minus dashes -> "-"
+    .replace(/[\u200b-\u200d\ufeff]/g, ""); // zero-width spaces + BOM
+}
+
+// True when every character fits in a byte, i.e. the value is safe to place in
+// an HTTP header without throwing.
+function isHeaderSafe(value) {
+  return !/[^\u0000-\u00ff]/.test(value);
+}
+
 // Environment variables are case-sensitive, but the key is easy to add as
 // `openai_api_key` (or with stray quotes/whitespace) in the Vercel dashboard.
 // Accept any casing and clean the value instead of failing silently.
 function findOpenAIKey() {
   for (const [name, value] of Object.entries(process.env)) {
     if (name.toLowerCase() !== "openai_api_key") continue;
-    const cleaned = String(value || "").trim().replace(/^["']|["']$/g, "");
+    const cleaned = sanitizeKey(value);
     if (cleaned) return { key: cleaned, envName: name };
   }
   return { key: "", envName: "" };
@@ -25,14 +46,17 @@ export default async function handler(request, response) {
   if (request.method === "GET") {
     // Connection check for the fitting room — never returns the key itself.
     const { key, envName } = findOpenAIKey();
+    const keyUsable = Boolean(key) && isHeaderSafe(key);
     return response.status(200).json({
-      keyDetected: Boolean(key),
+      keyDetected: keyUsable,
       keyEnvName: envName || null,
-      note: key
-        ? envName === "OPENAI_API_KEY"
-          ? "Key connected."
-          : `Key connected (found as "${envName}" — the standard name is OPENAI_API_KEY, but this deployment accepts it either way).`
-        : "No OPENAI_API_KEY found in this deployment's environment variables. Add it in Vercel → Project → Settings → Environment Variables, then redeploy.",
+      note: !key
+        ? "No OPENAI_API_KEY found in this deployment's environment variables. Add it in Vercel → Project → Settings → Environment Variables, then redeploy."
+        : !keyUsable
+          ? "A key was found but it contains an invalid character (often a curly quote, smart dash, or hidden character from copy-paste). Re-copy it as plain text, update OPENAI_API_KEY, and redeploy."
+          : envName === "OPENAI_API_KEY"
+            ? "Key connected."
+            : `Key connected (found as "${envName}" — the standard name is OPENAI_API_KEY, but this deployment accepts it either way).`,
       models: MODELS.map((model) => model.id),
     });
   }
@@ -47,6 +71,13 @@ export default async function handler(request, response) {
     return response.status(503).json({
       error: "The AI fitting-room key has not been connected to this deployment yet. Add OPENAI_API_KEY in Vercel's environment variables and redeploy.",
       offline: true,
+    });
+  }
+  if (!isHeaderSafe(key)) {
+    // Any character above U+00FF would crash the Authorization header with an
+    // opaque ByteString error, so fail with an actionable message instead.
+    return response.status(500).json({
+      error: "The connected OpenAI key contains an invalid character (often a curly quote, smart dash, or hidden character introduced when copying). Re-copy the key as plain text, update OPENAI_API_KEY, and redeploy.",
     });
   }
 

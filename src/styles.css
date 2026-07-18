@@ -228,7 +228,10 @@ footer button { margin-top: 20px; padding: 10px 0; display: flex; gap: 8px; bord
   .search-field { width: 100%; }
   .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .product-viewer { grid-template-columns: 1fr; max-height: 94vh; }
-  .viewer-image-wrap { min-height: 480px; }
+  /* Stacked layout: cap the image so the name, price, and description are
+     reachable by scrolling instead of the photo filling the whole panel. */
+  .viewer-image-wrap { min-height: 420px; }
+  .viewer-image-wrap > .merch-art { min-height: 420px; }
   .viewer-copy { padding: 36px 28px 28px; }
   .viewer-price-row { margin-top: 36px; }
 }
@@ -257,10 +260,14 @@ footer button { margin-top: 20px; padding: 10px 0; display: flex; gap: 8px; bord
   .product-image-button { aspect-ratio: .88; }
   .division-chip { max-width: calc(100% - 18px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .product-viewer-overlay { padding: 0; }
-  .product-viewer { width: 100%; max-height: 100dvh; min-height: 100dvh; }
-  .viewer-image-wrap { min-height: 54vh; }
-  .viewer-copy { padding: 31px 20px 25px; }
-  .viewer-copy h2 { font-size: 38px; }
+  .product-viewer { width: 100%; max-height: 100dvh; min-height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  /* Keep the photo to under half the screen so the product name and the start
+     of the description are visible on open, with the rest a short scroll away. */
+  .viewer-image-wrap { min-height: 44vh; }
+  .viewer-image-wrap > .merch-art { min-height: 44vh; }
+  .viewer-copy { padding: 28px 20px calc(25px + env(safe-area-inset-bottom)); }
+  .viewer-copy h2 { font-size: 34px; }
+  .viewer-description { margin-top: 22px; }
   .studio { width: 100%; padding: 19px; }
   .model-stage { height: 390px; }
   .floating-studio-button { right: 12px; bottom: 12px; }
